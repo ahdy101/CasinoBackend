@@ -1,0 +1,31 @@
+@page
+@model AdminIndexModel
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@{
+    ViewData["Title"] = "Admin Area";
+}
+<h2>Admin Dashboard</h2>
+<p class="mb-4">Welcome, admin! Here are all registered users and their balances:</p>
+<table class="table table-bordered table-sm w-auto mb-4">
+    <thead>
+        <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Balance</th>
+            <th>Created</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@user.Username</td>
+                <td>@user.Role</td>
+                <td>@user.Balance</td>
+                <td>@user.CreatedAt.ToShortDateString()</td>
+            </tr>
+        }
+    </tbody>
+</table>
+<a asp-page="/Index" class="btn btn-secondary">Back to Home</a>
