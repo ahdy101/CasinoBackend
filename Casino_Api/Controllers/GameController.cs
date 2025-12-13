@@ -1,9 +1,11 @@
 ﻿using Casino.Backend.Data;
+using Casino.Backend.DTOs.Responses;
+using Casino.Backend.Infrastructure;
 using Casino.Backend.Models;
+using Casino.Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using System.Security.Cryptography;
 
 namespace Casino.Backend.Controllers
 {
@@ -12,81 +14,73 @@ namespace Casino.Backend.Controllers
     public class GameController : ControllerBase
     {
         private readonly AppDbContext _db;
-        public GameController(AppDbContext db) { _db = db; }
+        private readonly IRouletteEngine _rouletteEngine;
+        private readonly IWalletService _walletService;
+        private readonly ILogger<GameController> _logger;
+
+        public GameController(
+            AppDbContext db,
+            IRouletteEngine rouletteEngine,
+            IWalletService walletService,
+            ILogger<GameController> logger)
+        {
+            _db = db;
+            _rouletteEngine = rouletteEngine;
+            _walletService = walletService;
+            _logger = logger;
+        }
 
         private bool IsApiKeyValid(string apiKey)
         {
             return !string.IsNullOrEmpty(apiKey) && _db.TenantApiKeys.Any(k => k.ApiKey == apiKey);
         }
 
+        /// <summary>
+        /// Legacy roulette endpoint - redirects to new RouletteController
+        /// </summary>
         [HttpPost("roulette")]
         [Authorize]
+        [Obsolete("Use /api/roulette/spin instead")]
         public async Task<IActionResult> PlayRoulette([FromBody] RouletteRequest req, [FromQuery] string apiKey)
         {
-            if (!IsApiKeyValid(apiKey)) return Unauthorized("Invalid or missing API key.");
+            if (!IsApiKeyValid(apiKey))
+                return Unauthorized(new ErrorResponse { Message = "Invalid or missing API key." });
 
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-            var user = await _db.Users.FindAsync(userId);
-            if (user == null) return Unauthorized();
-            if (req.Amount <= 0 || req.Amount > user.Balance) return BadRequest("Invalid stake");
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-            // Withdraw stake
-            user.Balance -= req.Amount;
-
-            // Spin (0-36)
-            int roll = GetRandomInt(0, 37);
-            bool win = EvaluateRoulette(roll, req.Choice); // implement evaluation
-            decimal payout = 0m;
-            if (win) payout = req.Amount * 2m; // example even money
-
-            // Apply payout
-            user.Balance += payout;
-
-            var bet = new Bet
+            // Deduct bet
+            var walletResult = await _walletService.DeductBet(userId, req.Amount, "Roulette", req.Choice);
+            if (!walletResult.Success)
             {
-                UserId = userId,
-                Game = "Roulette",
-                Amount = req.Amount,
-                Choice = req.Choice,
-                Payout = payout
-            };
-            _db.Bets.Add(bet);
-            await _db.SaveChangesAsync();
+                return Conflict(new ErrorResponse { Message = walletResult.Message, Errors = walletResult.Errors });
+            }
 
-            return Ok(new { roll, payout, balance = user.Balance });
-        }
+            try
+            {
+                // Create single bet
+                var bet = new RouletteBet { BetType = "straight", Amount = req.Amount, Value = req.Choice };
+                var result = await _rouletteEngine.Spin(userId, new List<RouletteBet> { bet });
 
-        private int GetRandomInt(int min, int max)
-        {
-            var bytes = new byte[4];
-            RandomNumberGenerator.Fill(bytes);
-            int val = Math.Abs(BitConverter.ToInt32(bytes, 0));
-            return min + (val % (max - min));
-        }
+                // Process payout
+                if (result.TotalPayout > 0 && walletResult.BetId.HasValue)
+                {
+                    await _walletService.ProcessPayout(userId, walletResult.BetId.Value, result.TotalPayout);
+                }
 
-        private bool EvaluateRoulette(int roll, string choice)
-        {
-            // Simple evaluation: supports "Red", "Black", or a number as string (e.g., "17")
-            if (int.TryParse(choice, out int numberChoice))
-                return roll == numberChoice;
-            if (choice.Equals("Red", StringComparison.OrdinalIgnoreCase))
-                return IsRed(roll);
-            if (choice.Equals("Black", StringComparison.OrdinalIgnoreCase))
-                return IsBlack(roll);
-            return false;
-        }
+                var newBalance = await _walletService.GetBalance(userId);
 
-        // Helper: basic roulette color logic (European wheel)
-        private bool IsRed(int n)
-        {
-            int[] reds = {1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36};
-            return reds.Contains(n);
-        }
-        private bool IsBlack(int n)
-        {
-            int[] blacks = {2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35};
-            return blacks.Contains(n);
+                return Ok(new
+                {
+                    roll = result.WinningNumber,
+                    payout = result.TotalPayout,
+                    balance = newBalance
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in legacy roulette endpoint");
+                return StatusCode(500, new ErrorResponse { Message = "An error occurred" });
+            }
         }
     }
-
 }

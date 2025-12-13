@@ -1,0 +1,70 @@
+.about-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+}
+
+.about-header {
+  text-align: center;
+  margin-bottom: var(--spacing-2xl);
+}
+
+.about-title {
+  font-size: 3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--silver) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--spacing-md);
+}
+
+.about-subtitle {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.about-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.about-card {
+  padding: var(--spacing-2xl);
+}
+
+.about-card h2 {
+  font-size: 1.75rem;
+  color: var(--gold);
+  margin-bottom: var(--spacing-lg);
+}
+
+.about-card p {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+.about-card ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.about-card li {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  padding-left: var(--spacing-lg);
+  position: relative;
+}
+
+.about-card li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+  font-weight: 700;
+}

@@ -1,5 +1,6 @@
 ﻿using Casino.Backend.Data;
 using Casino.Backend.Models;
+using Casino.Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -8,26 +9,55 @@ using System.Text;
 
 namespace Casino.Backend.Services
 {
-    public class AuthService
+    public class AuthService : IAuthService
     {
         private readonly AppDbContext _db;
         private readonly IConfiguration _config;
-        public AuthService(AppDbContext db, IConfiguration config) { _db = db; _config = config; }
+        private readonly ILogger<AuthService> _logger;
 
-        public async Task<User> RegisterAsync(string username, string password)
+        public AuthService(AppDbContext db, IConfiguration config, ILogger<AuthService> logger)
         {
-            if (await _db.Users.AnyAsync(u => u.Username == username)) throw new Exception("Username taken");
+            _db = db;
+            _config = config;
+            _logger = logger;
+        }
+
+        public async Task<User> RegisterAsync(string username, string password, decimal initialBalance = 1000m)
+        {
+            _logger.LogInformation("RegisterAsync - Username: {Username}", username);
+
+            if (await _db.Users.AnyAsync(u => u.Username == username))
+            {
+                _logger.LogWarning("RegisterAsync - Username already taken: {Username}", username);
+                throw new Exception("Username taken");
+            }
+
             var hash = BCrypt.Net.BCrypt.HashPassword(password);
-            var user = new User { Username = username, PasswordHash = hash, Balance = 1000m }; // seed
+            var user = new User
+            {
+                Username = username,
+                PasswordHash = hash,
+                Balance = initialBalance,
+                CreatedAt = DateTime.UtcNow
+            };
+
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
+
+            _logger.LogInformation("RegisterAsync successful - UserId: {UserId}, Username: {Username}", user.Id, username);
             return user;
         }
 
         public async Task<string> LoginAsync(string username, string password)
         {
+            _logger.LogInformation("LoginAsync - Username: {Username}", username);
+
             var user = await _db.Users.SingleOrDefaultAsync(u => u.Username == username);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash)) throw new Exception("Invalid credentials");
+            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            {
+                _logger.LogWarning("LoginAsync - Invalid credentials for username: {Username}", username);
+                throw new Exception("Invalid credentials");
+            }
 
             // Create JWT
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -41,7 +71,38 @@ namespace Casino.Backend.Services
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            _logger.LogInformation("LoginAsync successful - UserId: {UserId}", user.Id);
             return tokenHandler.WriteToken(token);
+        }
+
+        public async Task<bool> IsUsernameAvailable(string username)
+        {
+            return !await _db.Users.AnyAsync(u => u.Username == username);
+        }
+
+        public async Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
+        {
+            _logger.LogInformation("ChangePasswordAsync - UserId: {UserId}", userId);
+
+            var user = await _db.Users.FindAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("ChangePasswordAsync - User not found: {UserId}", userId);
+                return false;
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+            {
+                _logger.LogWarning("ChangePasswordAsync - Current password incorrect for UserId: {UserId}", userId);
+                return false;
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation("ChangePasswordAsync successful - UserId: {UserId}", userId);
+            return true;
         }
     }
 }

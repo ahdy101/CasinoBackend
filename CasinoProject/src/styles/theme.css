@@ -1,0 +1,110 @@
+:root {
+  /* Light Mode Colors */
+  --light-bg-primary: #f5f5f7;
+  --light-bg-secondary: #ffffff;
+  --light-bg-tertiary: #e8e8ed;
+  --light-text-primary: #1d1d1f;
+  --light-text-secondary: #515154;
+  --light-border: #d2d2d7;
+  --light-shadow: rgba(0, 0, 0, 0.1);
+  
+  /* Dark Mode Colors */
+  --dark-bg-primary: #0a0a0a;
+  --dark-bg-secondary: #1c1c1e;
+  --dark-bg-tertiary: #2c2c2e;
+  --dark-text-primary: #f5f5f7;
+  --dark-text-secondary: #98989d;
+  --dark-border: #38383a;
+  --dark-shadow: rgba(0, 0, 0, 0.5);
+  
+  /* Brand Colors */
+  --silver: #c0c0c0;
+  --silver-light: #e8e8e8;
+  --silver-dark: #808080;
+  --gold: #d4af37;
+  --gold-light: #f4d03f;
+  --gold-dark: #b8941e;
+  --platinum: #e5e4e2;
+  
+  /* Accent Colors */
+  --accent-primary: var(--gold);
+  --accent-secondary: var(--silver);
+  
+  /* Status Colors */
+  --success: #4caf50;
+  --error: #f44336;
+  --warning: #ff9800;
+  --info: #2196f3;
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+  --transition-slow: 500ms ease;
+}
+
+[data-theme="light"] {
+  --bg-primary: var(--light-bg-primary);
+  --bg-secondary: var(--light-bg-secondary);
+  --bg-tertiary: var(--light-bg-tertiary);
+  --text-primary: var(--light-text-primary);
+  --text-secondary: var(--light-text-secondary);
+  --border-color: var(--light-border);
+  --shadow-color: var(--light-shadow);
+}
+
+[data-theme="dark"] {
+  --bg-primary: var(--dark-bg-primary);
+  --bg-secondary: var(--dark-bg-secondary);
+  --bg-tertiary: var(--dark-bg-tertiary);
+  --text-primary: var(--dark-text-primary);
+  --text-secondary: var(--dark-text-secondary);
+  --border-color: var(--dark-border);
+  --shadow-color: var(--dark-shadow);
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+/* Metallic Gradient Effects */
+.gold-gradient {
+  background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-light) 100%);
+}
+
+.silver-gradient {
+  background: linear-gradient(135deg, var(--silver-dark) 0%, var(--silver) 50%, var(--silver-light) 100%);
+}
+
+.metallic-glow {
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: 0 4px 6px var(--shadow-color);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 12px var(--shadow-color);
+}

@@ -1,0 +1,71 @@
+.rules-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+}
+
+.rules-header {
+  text-align: center;
+  margin-bottom: var(--spacing-2xl);
+}
+
+.rules-title {
+  font-size: 3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--silver) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--spacing-md);
+}
+
+.rules-subtitle {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.rules-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.rules-card {
+  padding: var(--spacing-2xl);
+}
+
+.rules-card h2 {
+  font-size: 1.75rem;
+  color: var(--gold);
+  margin-bottom: var(--spacing-lg);
+}
+
+.rules-card p {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.rules-card ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.rules-card li {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  padding-left: var(--spacing-lg);
+  position: relative;
+}
+
+.rules-card li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+  font-weight: 700;
+}

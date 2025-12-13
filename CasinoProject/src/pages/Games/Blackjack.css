@@ -1,0 +1,100 @@
+.blackjack-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+  margin-bottom: var(--spacing-xl);
+}
+
+.dealer-section,
+.player-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.dealer-section h3,
+.player-section h3 {
+  color: var(--text-primary);
+  font-size: 1.25rem;
+}
+
+.card-hand {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.playing-card {
+  width: 80px;
+  height: 112px;
+  background: white;
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.playing-card.red {
+  color: #d32f2f;
+}
+
+.playing-card.black {
+  color: #000;
+}
+
+.card-back {
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+  color: white;
+  font-size: 3rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.card-suit {
+  font-size: 2rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+}
+
+.action-buttons button {
+  min-width: 150px;
+}
+
+@media (max-width: 768px) {
+  .playing-card {
+    width: 60px;
+    height: 84px;
+  }
+  
+  .card-value {
+    font-size: 1.125rem;
+  }
+  
+  .card-suit {
+    font-size: 1.5rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .action-buttons button {
+    width: 100%;
+  }
+}

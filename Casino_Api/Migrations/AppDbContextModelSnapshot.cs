@@ -22,6 +22,33 @@ namespace Casino.Backend.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("Casino.Backend.Models.AdminUser", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Username")
+                        .IsUnique();
+
+                    b.ToTable("AdminUsers");
+                });
+
             modelBuilder.Entity("Casino.Backend.Models.Bet", b =>
                 {
                     b.Property<int>("Id")
@@ -57,6 +84,81 @@ namespace Casino.Backend.Migrations
                     b.ToTable("Bets");
                 });
 
+            modelBuilder.Entity("Casino.Backend.Models.BlackjackGame", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("BetAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("DealerCards")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("DealerTotal")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("Payout")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("PlayerCards")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("PlayerTotal")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BlackjackGames");
+                });
+
+            modelBuilder.Entity("Casino.Backend.Models.TenantApiKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApiKey")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("TenantName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApiKey")
+                        .IsUnique();
+
+                    b.ToTable("TenantApiKeys");
+                });
+
             modelBuilder.Entity("Casino.Backend.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -88,6 +190,17 @@ namespace Casino.Backend.Migrations
                 });
 
             modelBuilder.Entity("Casino.Backend.Models.Bet", b =>
+                {
+                    b.HasOne("Casino.Backend.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Casino.Backend.Models.BlackjackGame", b =>
                 {
                     b.HasOne("Casino.Backend.Models.User", "User")
                         .WithMany()

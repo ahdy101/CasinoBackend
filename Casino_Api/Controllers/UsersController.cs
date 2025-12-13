@@ -1,4 +1,6 @@
 using Casino.Backend.Data;
+using Casino.Backend.DTOs.Requests;
+using Casino.Backend.DTOs.Responses;
 using Casino.Backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +13,13 @@ namespace Casino.Backend.Controllers
  public class UsersController : ControllerBase
  {
  private readonly AppDbContext _db;
- public UsersController(AppDbContext db) { _db = db; }
+ private readonly ILogger<UsersController> _logger;
+
+ public UsersController(AppDbContext db, ILogger<UsersController> logger)
+ {
+ _db = db;
+ _logger = logger;
+ }
 
  private bool IsApiKeyValid(string apiKey)
  {
@@ -19,47 +27,141 @@ namespace Casino.Backend.Controllers
  }
 
  [HttpGet]
+ [ProducesResponseType(typeof(List<UserResponse>), StatusCodes.Status200OK)]
+ [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
  public async Task<IActionResult> GetAll([FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey)) return Unauthorized("Invalid or missing API key.");
- var users = await _db.Users.ToListAsync();
+ if (!IsApiKeyValid(apiKey))
+ return Unauthorized(new ErrorResponse { Message = "Invalid or missing API key." });
+
+ var users = await _db.Users
+ .Select(u => new UserResponse
+ {
+ Id = u.Id,
+ Username = u.Username,
+ Balance = u.Balance,
+ CreatedAt = u.CreatedAt
+ })
+ .ToListAsync();
+
  return Ok(users);
  }
 
  [HttpGet("{id}")]
+ [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
+ [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
  public async Task<IActionResult> Get(int id, [FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey)) return Unauthorized("Invalid or missing API key.");
+ if (!IsApiKeyValid(apiKey))
+ return Unauthorized(new ErrorResponse { Message = "Invalid or missing API key." });
+
  var user = await _db.Users.FindAsync(id);
- if (user == null) return NotFound();
- return Ok(user);
+ if (user == null)
+ return NotFound(new ErrorResponse { Message = "User not found" });
+
+ var response = new UserResponse
+ {
+ Id = user.Id,
+ Username = user.Username,
+ Balance = user.Balance,
+ CreatedAt = user.CreatedAt
+ };
+
+ return Ok(response);
  }
 
  [HttpPost]
- public async Task<IActionResult> Create([FromBody] User user, [FromQuery] string apiKey)
+ [ProducesResponseType(typeof(UserResponse), StatusCodes.Status201Created)]
+ [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+ public async Task<IActionResult> Create([FromBody] CreateUserRequest request, [FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey)) return Unauthorized("Invalid or missing API key.");
+ if (!IsApiKeyValid(apiKey))
+ return Unauthorized(new ErrorResponse { Message = "Invalid or missing API key." });
+
+ if (!ModelState.IsValid)
+ {
+ return BadRequest(new ErrorResponse
+ {
+ Message = "Validation failed",
+ Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList()
+ });
+ }
+
+ // Check if username already exists
+ if (await _db.Users.AnyAsync(u => u.Username == request.Username))
+ {
+ return Conflict(new ErrorResponse { Message = "Username already taken" });
+ }
+
+ // Hash password
+ var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+ var user = new User
+ {
+ Username = request.Username,
+ PasswordHash = passwordHash,
+ Balance = request.InitialBalance ?? 1000m,
+ CreatedAt = DateTime.UtcNow
+ };
+
  _db.Users.Add(user);
  await _db.SaveChangesAsync();
- return CreatedAtAction(nameof(Get), new { id = user.Id }, user);
+
+ var response = new UserResponse
+ {
+ Id = user.Id,
+ Username = user.Username,
+ Balance = user.Balance,
+ CreatedAt = user.CreatedAt
+ };
+
+ return CreatedAtAction(nameof(Get), new { id = user.Id, apiKey }, response);
  }
 
  [HttpPut("{id}")]
- public async Task<IActionResult> Update(int id, [FromBody] User user, [FromQuery] string apiKey)
+ [ProducesResponseType(StatusCodes.Status204NoContent)]
+ [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+ [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+ public async Task<IActionResult> Update(int id, [FromBody] UpdateUserRequest request, [FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey)) return Unauthorized("Invalid or missing API key.");
- if (id != user.Id) return BadRequest();
- _db.Entry(user).State = EntityState.Modified;
+ if (!IsApiKeyValid(apiKey))
+ return Unauthorized(new ErrorResponse { Message = "Invalid or missing API key." });
+
+ if (id != request.Id)
+ return BadRequest(new ErrorResponse { Message = "ID mismatch" });
+
+ var user = await _db.Users.FindAsync(id);
+ if (user == null)
+ return NotFound(new ErrorResponse { Message = "User not found" });
+
+ // Update username if provided
+ if (!string.IsNullOrEmpty(request.Username))
+ {
+ user.Username = request.Username;
+ }
+
+ // Update password if provided
+ if (!string.IsNullOrEmpty(request.NewPassword))
+ {
+ user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+ }
+
  await _db.SaveChangesAsync();
  return NoContent();
  }
 
  [HttpDelete("{id}")]
+ [ProducesResponseType(StatusCodes.Status204NoContent)]
+ [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
  public async Task<IActionResult> Delete(int id, [FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey)) return Unauthorized("Invalid or missing API key.");
+ if (!IsApiKeyValid(apiKey))
+ return Unauthorized(new ErrorResponse { Message = "Invalid or missing API key." });
+
  var user = await _db.Users.FindAsync(id);
- if (user == null) return NotFound();
+ if (user == null)
+ return NotFound(new ErrorResponse { Message = "User not found" });
+
  _db.Users.Remove(user);
  await _db.SaveChangesAsync();
  return NoContent();
