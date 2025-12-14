@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { MdLightMode, MdDarkMode, MdAccountBalanceWallet, MdHistory, MdSettings, MdLogout } from 'react-icons/md';
+import { MdLightMode, MdDarkMode, MdAccountBalanceWallet, MdHistory, MdSettings, MdLogout, MdDashboard } from 'react-icons/md';
 import { LOGO_ICON } from '../../constants/images';
 import './Header.css';
 
 const Header = () => {
-  const { user, balance, logout } = useAuth();
+  const { user, balance, logout, isAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -75,6 +75,12 @@ const Header = () => {
                     <small>{user.email}</small>
                   </div>
                   <div className="profile-divider"></div>
+                  {isAdmin && (
+                    <>
+                      <Link to="/admin" className="profile-menu-item admin"><MdDashboard /> Admin Dashboard</Link>
+                      <div className="profile-divider"></div>
+                    </>
+                  )}
                   <Link to="/wallet" className="profile-menu-item"><MdAccountBalanceWallet /> Wallet</Link>
                   <Link to="/transactions" className="profile-menu-item"><MdHistory /> Transactions</Link>
                   <Link to="/settings" className="profile-menu-item"><MdSettings /> Settings</Link>

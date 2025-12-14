@@ -14,6 +14,7 @@ import About from './pages/About/About';
 import Rules from './pages/Rules/Rules';
 import Privacy from './pages/Privacy/Privacy';
 import Contact from './pages/Contact/Contact';
+import AdminDashboard from './pages/Admin/AdminDashboard';
 import Slots from './pages/Games/Slots';
 import Blackjack from './pages/Games/Blackjack';
 import Poker from './pages/Games/Poker';
@@ -24,6 +25,21 @@ import './styles/theme.css';
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
+// Admin Route Component
+const AdminRoute = ({ children }) => {
+  const { isAuthenticated, isAdmin } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (!isAdmin) {
+    return <Navigate to="/lobby" />;
+  }
+  
+  return children;
 };
 
 function AppContent() {
@@ -141,6 +157,14 @@ function AppContent() {
             <ProtectedRoute>
               <Contact />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
           }
         />
       </Routes>

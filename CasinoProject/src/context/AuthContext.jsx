@@ -12,6 +12,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [balance, setBalance] = useState(10000); // Starting balance in chips
   const [transactions, setTransactions] = useState([]);
   const [gameHistory, setGameHistory] = useState([]);
@@ -61,11 +62,15 @@ export const AuthProvider = ({ children }) => {
 
   const login = (email, password) => {
     // Mock login - replace with actual API call later
+    // Check if admin login
+    const isAdminLogin = email === 'admin@silverslayed.com';
+    
     const mockUser = {
       id: '1',
       email: email,
       name: email.split('@')[0],
       joinDate: new Date().toISOString(),
+      role: isAdminLogin ? 'admin' : 'user',
       settings: {
         notifications: true,
         emailUpdates: true,
@@ -75,7 +80,9 @@ export const AuthProvider = ({ children }) => {
       }
     };
     setUser(mockUser);
+    setIsAdmin(isAdminLogin);
     localStorage.setItem('user', JSON.stringify(mockUser));
+    localStorage.setItem('isAdmin', isAdminLogin.toString());
     return { success: true };
   };
 
@@ -187,6 +194,7 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{ 
       user, 
+      isAdmin,
       balance, 
       transactions,
       gameHistory,

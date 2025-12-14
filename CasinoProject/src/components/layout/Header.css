@@ -240,6 +240,15 @@
   color: var(--silver);
 }
 
+.profile-menu-item.admin {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.profile-menu-item.admin:hover {
+  color: var(--gold-light);
+}
+
 .profile-menu-item.logout {
   color: var(--error);
 }
