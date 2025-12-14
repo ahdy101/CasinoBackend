@@ -9,7 +9,6 @@ namespace Casino_Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[ServiceFilter(typeof(RequireApiKeyAttribute))]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -23,6 +22,7 @@ public class AuthController : ControllerBase
     /// Register a new user
     /// </summary>
     [HttpPost("register")]
+    [ServiceFilter(typeof(RequireApiKeyAttribute))]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)

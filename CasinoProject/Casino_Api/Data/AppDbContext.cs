@@ -15,18 +15,29 @@ public class AppDbContext : DbContext
     public DbSet<BlackjackGame> BlackjackGames { get; set; }
     public DbSet<PokerTable> PokerTables { get; set; }
     public DbSet<GameHistory> GameHistories { get; set; }
+    public DbSet<GameState> GameStates { get; set; }
+    public DbSet<GameStatistics> GameStatistics { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Unique constraints
+        // Unique constraints for Users
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Username)
             .IsUnique();
 
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)
+            .IsUnique();
+
+        // Unique constraints for AdminUsers
+        modelBuilder.Entity<AdminUser>()
+            .HasIndex(a => a.Username)
+            .IsUnique();
+
+        modelBuilder.Entity<AdminUser>()
+            .HasIndex(a => a.Email)
             .IsUnique();
 
         modelBuilder.Entity<TenantApiKey>()
@@ -89,6 +100,36 @@ public class AppDbContext : DbContext
             .Property(g => g.Payout)
             .HasPrecision(18, 2);
 
+        // GameState relationships
+        modelBuilder.Entity<GameState>()
+            .HasOne(gs => gs.User)
+            .WithMany()
+            .HasForeignKey(gs => gs.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GameState>()
+            .HasIndex(gs => new { gs.UserId, gs.GameType })
+            .IsUnique();
+
+        // GameStatistics relationships
+        modelBuilder.Entity<GameStatistics>()
+            .HasOne(gs => gs.User)
+            .WithMany()
+            .HasForeignKey(gs => gs.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GameStatistics>()
+            .HasIndex(gs => new { gs.UserId, gs.GameType })
+            .IsUnique();
+
+        modelBuilder.Entity<GameStatistics>()
+            .Property(gs => gs.TotalWagered)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<GameStatistics>()
+            .Property(gs => gs.TotalWon)
+            .HasPrecision(18, 2);
+
         // Seed data
         SeedAdminUsers(modelBuilder);
         SeedTenantApiKeys(modelBuilder);
@@ -96,14 +137,16 @@ public class AppDbContext : DbContext
 
     private void SeedAdminUsers(ModelBuilder modelBuilder)
     {
-        var adminHash = BCrypt.Net.BCrypt.HashPassword("Admin@123");
-        modelBuilder.Entity<AdminUser>().HasData(new AdminUser
+        // Seed an admin user in the Users table for login
+        var adminUserHash = BCrypt.Net.BCrypt.HashPassword("admin123");
+        modelBuilder.Entity<User>().HasData(new User
         {
-            Id = 1,
+            Id = 999,
             Username = "admin",
-            PasswordHash = adminHash,
-            Role = "SuperAdmin",
-            CreatedAt = DateTime.UtcNow
+            Email = "admin@casinoapi.com",
+            PasswordHash = adminUserHash,
+            Balance = 999999m,
+            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
     }
 
@@ -115,7 +158,7 @@ public class AppDbContext : DbContext
             TenantName = "DefaultTenant",
             ApiKey = "default_tenant_api_key_12345",
             IsActive = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
     }
 }

@@ -15,7 +15,7 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/admin/dashboard');
+      const response = await fetch('http://localhost:5001/api/admin/dashboard');
       if (!response.ok) throw new Error('Failed to fetch dashboard data');
       const data = await response.json();
       setDashboardData(data);

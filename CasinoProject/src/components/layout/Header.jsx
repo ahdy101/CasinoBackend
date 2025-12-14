@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { MdLightMode, MdDarkMode, MdAccountBalanceWallet, MdHistory, MdSettings, MdLogout, MdDashboard } from 'react-icons/md';
+import { MdLightMode, MdDarkMode, MdAccountBalanceWallet, MdHistory, MdSettings, MdLogout, MdDashboard, MdSave } from 'react-icons/md';
 import { LOGO_ICON } from '../../constants/images';
 import './Header.css';
 
@@ -81,6 +81,7 @@ const Header = () => {
                       <div className="profile-divider"></div>
                     </>
                   )}
+                  <Link to="/saved-games" className="profile-menu-item"><MdSave /> Saved Games</Link>
                   <Link to="/wallet" className="profile-menu-item"><MdAccountBalanceWallet /> Wallet</Link>
                   <Link to="/transactions" className="profile-menu-item"><MdHistory /> Transactions</Link>
                   <Link to="/settings" className="profile-menu-item"><MdSettings /> Settings</Link>

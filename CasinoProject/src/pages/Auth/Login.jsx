@@ -15,6 +15,7 @@ const Login = () => {
     password: ''
   });
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -45,7 +46,7 @@ const Login = () => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     const newErrors = validateForm();
@@ -54,9 +55,21 @@ const Login = () => {
       return;
     }
 
-    const result = login(formData.email, formData.password);
-    if (result.success) {
-      navigate('/lobby');
+    setLoading(true);
+    setErrors({});
+
+    try {
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
+        navigate('/lobby');
+      } else {
+        setErrors({ general: result.message || 'Login failed. Please try again.' });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrors({ general: 'Network error. Please check if the API server is running.' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -93,14 +106,20 @@ const Login = () => {
               required
             />
 
+            {errors.general && (
+              <div className="error-message" style={{color: 'red', marginBottom: '1rem', textAlign: 'center'}}>
+                {errors.general}
+              </div>
+            )}
+
             <div className="auth-forgot">
               <Link to="/forgot-password" className="auth-link">
                 Forgot password?
               </Link>
             </div>
 
-            <Button type="submit" variant="primary" size="large" fullWidth>
-              Login
+            <Button type="submit" variant="primary" size="large" fullWidth disabled={loading}>
+              {loading ? 'Logging in...' : 'Login'}
             </Button>
           </form>
 

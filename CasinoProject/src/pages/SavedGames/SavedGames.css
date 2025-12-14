@@ -1,0 +1,215 @@
+.saved-games-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+}
+
+.saved-games-header {
+  text-align: center;
+  margin-bottom: var(--spacing-2xl);
+}
+
+.saved-games-title {
+  font-size: 3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--silver) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--spacing-md);
+}
+
+.saved-games-subtitle {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.saved-games-section,
+.stats-section {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.saved-games-section h2,
+.stats-section h2 {
+  font-size: 1.75rem;
+  color: var(--gold);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.saved-games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.saved-game-card {
+  padding: var(--spacing-xl);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.saved-game-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px var(--shadow-color);
+}
+
+.saved-game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.saved-game-header h3 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--error);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.delete-btn:hover {
+  background: rgba(245, 67, 54, 0.1);
+  transform: scale(1.1);
+}
+
+.saved-game-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.info-row .label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-row .value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.info-row .value.bet {
+  color: var(--gold);
+  font-size: 1.1rem;
+}
+
+.info-row .value.status {
+  text-transform: capitalize;
+  color: var(--info);
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-2xl);
+}
+
+.empty-state p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xl);
+  font-size: 1.1rem;
+}
+
+/* Statistics Section */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.stats-card {
+  padding: var(--spacing-xl);
+}
+
+.stats-card h3 {
+  font-size: 1.5rem;
+  color: var(--gold);
+  margin-bottom: var(--spacing-lg);
+  text-align: center;
+}
+
+.stats-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.stat-row.highlight {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(192, 192, 192, 0.1));
+  border: 1px solid var(--gold);
+  font-weight: 600;
+}
+
+.stat-row.profit {
+  border-color: var(--success);
+}
+
+.stat-row.loss-profit {
+  border-color: var(--error);
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stat-value.win {
+  color: var(--success);
+}
+
+.stat-value.loss {
+  color: var(--error);
+}
+
+.stat-row.profit .stat-value,
+.stat-row.loss-profit .stat-value {
+  font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+  .saved-games-grid,
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .saved-games-title {
+    font-size: 2rem;
+  }
+}

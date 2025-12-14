@@ -9,7 +9,13 @@ public class RequireApiKeyAttribute : Attribute, IAsyncAuthorizationFilter
 {
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
-        var apiKey = context.HttpContext.Request.Query["apiKey"].FirstOrDefault();
+        // Check for API key in header first, then query string
+        var apiKey = context.HttpContext.Request.Headers["X-API-KEY"].FirstOrDefault();
+        
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            apiKey = context.HttpContext.Request.Query["apiKey"].FirstOrDefault();
+        }
         
         if (string.IsNullOrEmpty(apiKey))
         {

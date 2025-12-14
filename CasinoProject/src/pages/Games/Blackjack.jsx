@@ -1,21 +1,89 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useGameState } from '../../context/GameStateContext';
 import { FaGamepad } from 'react-icons/fa';
+import { MdSave, MdPlayArrow } from 'react-icons/md';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import WarningModal from '../../components/common/WarningModal';
+import useGameExitWarning from '../../hooks/useGameExitWarning';
 import '../Games/Slots.css';
 import './Blackjack.css';
 
 const Blackjack = () => {
   const { balance, updateBalance } = useAuth();
+  const { saveGame, loadGame, hasSavedGame, deleteGame, updateGameStats } = useGameState();
   const [bet, setBet] = useState(10);
   const [gameState, setGameState] = useState('betting'); // betting, playing, ended
   const [playerHand, setPlayerHand] = useState([]);
   const [dealerHand, setDealerHand] = useState([]);
   const [result, setResult] = useState(null);
+  const [showWarning, setShowWarning] = useState(false);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+
+  // Check for saved game on mount
+  useEffect(() => {
+    const checkSaved = async () => {
+      const hasSaved = await hasSavedGame('blackjack');
+      if (hasSaved) {
+        setShowResumePrompt(true);
+      }
+    };
+    checkSaved();
+  }, []);
+
+  // Navigation warning when game is active
+  const isGameActive = gameState === 'playing';
+  const { confirmNavigation, cancelNavigation } = useGameExitWarning(
+    isGameActive,
+    () => setShowWarning(true)
+  );
 
   const suits = ['♠', '♥', '♦', '♣'];
   const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+  const handleSaveGame = () => {
+    saveGame('blackjack', {
+      bet,
+      gameState,
+      playerHand,
+      dealerHand
+    });
+    alert('Game saved successfully!');
+  };
+
+  // Auto-save game state when it changes (debounced)
+  useEffect(() => {
+    if (gameState === 'playing' && (playerHand.length > 0 || dealerHand.length > 0)) {
+      const timer = setTimeout(() => {
+        saveGame('blackjack', {
+          bet,
+          gameState,
+          playerHand,
+          dealerHand
+        });
+      }, 1000); // Debounce for 1 second
+
+      return () => clearTimeout(timer);
+    }
+  }, [bet, gameState, playerHand, dealerHand]);
+
+  const handleLoadGame = async () => {
+    const saved = await loadGame('blackjack');
+    if (saved) {
+      setBet(saved.bet);
+      setGameState(saved.gameState);
+      setPlayerHand(saved.playerHand);
+      setDealerHand(saved.dealerHand);
+      setShowResumePrompt(false);
+      setResult({ type: 'info', message: 'Game resumed!' });
+    }
+  };
+
+  const handleNewGame = () => {
+    deleteGame('blackjack');
+    setShowResumePrompt(false);
+  };
 
   const drawCard = () => {
     const suit = suits[Math.floor(Math.random() * suits.length)];
@@ -93,22 +161,35 @@ const Blackjack = () => {
 
     setGameState('ended');
 
+    let gameResult, winAmount = 0;
+
     if (playerValue > 21) {
+      gameResult = 'loss';
       setResult({ type: 'lose', message: 'Bust! You lose.' });
     } else if (dealerValue > 21) {
-      const winAmount = bet * 2;
+      gameResult = 'win';
+      winAmount = bet * 2;
       updateBalance(winAmount);
       setResult({ type: 'win', message: `Dealer busts! You win $${winAmount}!` });
     } else if (playerValue > dealerValue) {
-      const winAmount = bet * 2;
+      gameResult = 'win';
+      winAmount = bet * 2;
       updateBalance(winAmount);
       setResult({ type: 'win', message: `You win $${winAmount}!` });
     } else if (playerValue === dealerValue) {
+      gameResult = 'push';
       updateBalance(bet);
       setResult({ type: 'push', message: 'Push! Bet returned.' });
     } else {
+      gameResult = 'loss';
       setResult({ type: 'lose', message: 'Dealer wins.' });
     }
+
+    // Update game statistics
+    updateGameStats('blackjack', gameResult, bet, winAmount);
+
+    // Delete saved game since game ended
+    deleteGame('blackjack');
   };
 
   const renderCard = (card, hidden = false) => {
@@ -188,6 +269,9 @@ const Blackjack = () => {
             <div className="action-buttons">
               <Button variant="primary" onClick={hit}>Hit</Button>
               <Button variant="secondary" onClick={stand}>Stand</Button>
+              <span className="auto-save-indicator" style={{fontSize: '0.9em', color: '#888'}}>
+                ✓ Auto-saving...
+              </span>
             </div>
           )}
 
@@ -198,6 +282,30 @@ const Blackjack = () => {
           )}
         </Card>
       </div>
+
+      <WarningModal
+        show={showWarning}
+        title="Game in Progress"
+        message="You have an active Blackjack game. If you leave now, your current hand and bet will be lost. Are you sure you want to leave?"
+        onConfirm={() => {
+          setShowWarning(false);
+          confirmNavigation();
+        }}
+        onCancel={() => {
+          setShowWarning(false);
+          cancelNavigation();
+        }}
+      />
+
+      <WarningModal
+        show={showResumePrompt}
+        title="Resume Game?"
+        message="You have a saved Blackjack game. Would you like to resume where you left off?"
+        onConfirm={handleLoadGame}
+        onCancel={handleNewGame}
+        confirmText="Resume"
+        cancelText="New Game"
+      />
     </div>
   );
 };

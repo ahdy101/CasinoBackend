@@ -1,18 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useGameState } from '../../context/GameStateContext';
 import { FaDiceD6 } from 'react-icons/fa';
+import { MdSave } from 'react-icons/md';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import WarningModal from '../../components/common/WarningModal';
+import useGameExitWarning from '../../hooks/useGameExitWarning';
 import './Slots.css';
 
 const Slots = () => {
   const { balance, updateBalance } = useAuth();
+  const { saveGame, loadGame, deleteGame, hasSavedGame, updateGameStats } = useGameState();
   const [bet, setBet] = useState(10);
   const [reels, setReels] = useState(['A', 'B', 'C']);
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState(null);
+  const [showWarning, setShowWarning] = useState(false);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+
+  useEffect(() => {
+    if (hasSavedGame('slots')) {
+      setShowResumePrompt(true);
+    }
+  }, []);
+
+  const { confirmNavigation, cancelNavigation } = useGameExitWarning(
+    isSpinning,
+    () => setShowWarning(true)
+  );
 
   const symbols = ['A', 'B', 'C', 'D', 'E', 'F', '7'];
+
+  const handleSaveGame = () => {
+    saveGame('slots', { bet, reels });
+    setResult({ type: 'info', message: 'Game saved successfully!' });
+  };
+
+  const handleLoadGame = () => {
+    const saved = loadGame('slots');
+    if (saved) {
+      setBet(saved.bet);
+      setReels(saved.reels);
+      setShowResumePrompt(false);
+      setResult({ type: 'info', message: 'Game resumed!' });
+    }
+  };
+
+  const handleNewGame = () => {
+    deleteGame('slots');
+    setShowResumePrompt(false);
+  };
 
   const handleSpin = () => {
     if (balance < bet) {
@@ -44,18 +82,26 @@ const Slots = () => {
       setReels(finalReels);
       setIsSpinning(false);
 
+      let gameResult, winAmount = 0;
+
       // Check for win
       if (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]) {
-        const winAmount = bet * 10;
+        gameResult = 'win';
+        winAmount = bet * 10;
         updateBalance(winAmount);
         setResult({ type: 'win', message: `Jackpot! You won $${winAmount}!` });
       } else if (finalReels[0] === finalReels[1] || finalReels[1] === finalReels[2]) {
-        const winAmount = bet * 2;
+        gameResult = 'win';
+        winAmount = bet * 2;
         updateBalance(winAmount);
         setResult({ type: 'win', message: `You won $${winAmount}!` });
       } else {
+        gameResult = 'loss';
         setResult({ type: 'lose', message: 'Try again!' });
       }
+
+      // Update statistics
+      updateGameStats('slots', gameResult, bet, winAmount);
     }, 2000);
   };
 
@@ -101,15 +147,22 @@ const Slots = () => {
               </div>
             </div>
 
-            <Button
-              variant="primary"
-              size="large"
-              fullWidth
-              onClick={handleSpin}
-              disabled={isSpinning || balance < bet}
-            >
-              {isSpinning ? 'SPINNING...' : 'SPIN'}
-            </Button>
+            <div className="action-buttons">
+              <Button
+                variant="primary"
+                size="large"
+                fullWidth
+                onClick={handleSpin}
+                disabled={isSpinning || balance < bet}
+              >
+                {isSpinning ? 'SPINNING...' : 'SPIN'}
+              </Button>
+              {!isSpinning && (
+                <Button variant="warning" onClick={handleSaveGame}>
+                  <MdSave /> Save Game
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="payout-table">
@@ -125,6 +178,30 @@ const Slots = () => {
           </div>
         </Card>
       </div>
+
+      <WarningModal
+        show={showWarning}
+        title="Spin in Progress"
+        message="The slot machine is currently spinning. If you leave now, you may lose your bet. Are you sure you want to leave?"
+        onConfirm={() => {
+          setShowWarning(false);
+          confirmNavigation();
+        }}
+        onCancel={() => {
+          setShowWarning(false);
+          cancelNavigation();
+        }}
+      />
+
+      <WarningModal
+        show={showResumePrompt}
+        title="Resume Game?"
+        message="You have a saved Slots game. Would you like to resume where you left off?"
+        onConfirm={handleLoadGame}
+        onCancel={handleNewGame}
+        confirmText="Resume"
+        cancelText="New Game"
+      />
     </div>
   );
 };

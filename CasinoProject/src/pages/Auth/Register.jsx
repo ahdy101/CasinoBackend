@@ -55,7 +55,7 @@ const Register = () => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     const newErrors = validateForm();
@@ -64,12 +64,14 @@ const Register = () => {
       return;
     }
 
-    const result = register(formData.email, formData.password, formData.name);
+    const result = await register(formData.email, formData.password, formData.name);
     if (result.success) {
       setSuccessMessage(result.message);
       setTimeout(() => {
         navigate('/lobby');
       }, 2000);
+    } else {
+      setErrors({ general: result.message });
     }
   };
 

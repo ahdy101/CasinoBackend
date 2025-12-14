@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { GameStateProvider } from './context/GameStateContext';
 import Header from './components/layout/Header';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -15,6 +16,7 @@ import Rules from './pages/Rules/Rules';
 import Privacy from './pages/Privacy/Privacy';
 import Contact from './pages/Contact/Contact';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import SavedGames from './pages/SavedGames/SavedGames';
 import Slots from './pages/Games/Slots';
 import Blackjack from './pages/Games/Blackjack';
 import Poker from './pages/Games/Poker';
@@ -51,134 +53,98 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route 
-          path="/" 
-          element={isAuthenticated ? <Navigate to="/lobby" /> : <Navigate to="/login" />} 
-        />
+        <Route
+          path="/"
+          element={isAuthenticated ? <Navigate to="/lobby" /> : <Navigate to="/login" />} />
         <Route
           path="/lobby"
-          element={
-            <ProtectedRoute>
-              <Lobby />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <Lobby />
+          </ProtectedRoute>} />
         <Route
           path="/slots"
-          element={
-            <ProtectedRoute>
-              <Slots />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <Slots />
+          </ProtectedRoute>} />
         <Route
           path="/blackjack"
-          element={
-            <ProtectedRoute>
-              <Blackjack />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <Blackjack />
+          </ProtectedRoute>} />
         <Route
           path="/poker"
-          element={
-            <ProtectedRoute>
-              <Poker />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <Poker />
+          </ProtectedRoute>} />
         <Route
           path="/roulette"
-          element={
-            <ProtectedRoute>
-              <Roulette />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <Roulette />
+          </ProtectedRoute>} />
         <Route
           path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>} />
         <Route
           path="/wallet"
-          element={
-            <ProtectedRoute>
-              <Wallet />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <Wallet />
+          </ProtectedRoute>} />
         <Route
           path="/transactions"
-          element={
-            <ProtectedRoute>
-              <Transactions />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <Transactions />
+          </ProtectedRoute>} />
         <Route
           path="/settings"
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>} />
         <Route
           path="/about"
-          element={
-            <ProtectedRoute>
-              <About />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <About />
+          </ProtectedRoute>} />
         <Route
           path="/rules"
-          element={
-            <ProtectedRoute>
-              <Rules />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <Rules />
+          </ProtectedRoute>} />
         <Route
           path="/privacy"
-          element={
-            <ProtectedRoute>
-              <Privacy />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <Privacy />
+          </ProtectedRoute>} />
         <Route
           path="/contact"
-          element={
-            <ProtectedRoute>
-              <Contact />
-            </ProtectedRoute>
-          }
-        />
+          element={<ProtectedRoute>
+            <Contact />
+          </ProtectedRoute>} />
         <Route
           path="/admin"
-          element={
-            <AdminRoute>
-              <AdminDashboard />
-            </AdminRoute>
-          }
-        />
-      </Routes>
-    </div>
-  );
-}
+          element={<AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>} />
+            <Route
+              path="/saved-games"
+              element={<ProtectedRoute>
+                <SavedGames />
+              </ProtectedRoute>} />
+          </Routes>
+        </div>
+      );
+    }
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <GameStateProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </GameStateProvider>
       </AuthProvider>
     </ThemeProvider>
   );

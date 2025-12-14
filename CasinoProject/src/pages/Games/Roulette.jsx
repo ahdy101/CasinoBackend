@@ -1,20 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useGameState } from '../../context/GameStateContext';
 import { FaDotCircle } from 'react-icons/fa';
+import { MdSave } from 'react-icons/md';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import WarningModal from '../../components/common/WarningModal';
+import useGameExitWarning from '../../hooks/useGameExitWarning';
 import './Roulette.css';
 
 const Roulette = () => {
   const { balance, updateBalance } = useAuth();
+  const { saveGame, loadGame, deleteGame, hasSavedGame, updateGameStats } = useGameState();
   const [bets, setBets] = useState({});
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState(null);
   const [winningNumber, setWinningNumber] = useState(null);
+  const [showWarning, setShowWarning] = useState(false);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+
+  useEffect(() => {
+    if (hasSavedGame('roulette')) {
+      setShowResumePrompt(true);
+    }
+  }, []);
+
+  const hasBets = Object.keys(bets).length > 0;
+  const { confirmNavigation, cancelNavigation } = useGameExitWarning(
+    isSpinning || hasBets,
+    () => setShowWarning(true)
+  );
 
   const numbers = Array.from({ length: 37 }, (_, i) => i); // 0-36
 
   const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+
+  const handleSaveGame = () => {
+    saveGame('roulette', { bets });
+    setResult({ type: 'info', message: 'Game saved successfully!' });
+  };
+
+  const handleLoadGame = () => {
+    const saved = loadGame('roulette');
+    if (saved) {
+      setBets(saved.bets);
+      setShowResumePrompt(false);
+      setResult({ type: 'info', message: 'Game resumed!' });
+    }
+  };
+
+  const handleNewGame = () => {
+    deleteGame('roulette');
+    setShowResumePrompt(false);
+  };
 
   const placeBet = (position, amount) => {
     if (balance < amount) {
@@ -85,19 +123,26 @@ const Roulette = () => {
       }
     }
 
+    const totalBet = getTotalBet();
+    let gameResult;
+
     if (totalWin > 0) {
+      gameResult = 'win';
       updateBalance(totalWin);
       setResult({ 
         type: 'win', 
         message: `Number ${number}! You won $${totalWin}!` 
       });
     } else {
+      gameResult = 'loss';
       setResult({ 
         type: 'lose', 
         message: `Number ${number}. Better luck next time!` 
       });
     }
 
+    updateGameStats('roulette', gameResult, totalBet, totalWin);
+    deleteGame('roulette');
     setBets({});
   };
 
@@ -225,9 +270,38 @@ const Roulette = () => {
             >
               Clear Bets
             </Button>
+            {!isSpinning && getTotalBet() > 0 && (
+              <Button variant="warning" onClick={handleSaveGame}>
+                <MdSave /> Save Bets
+              </Button>
+            )}
           </div>
         </Card>
       </div>
+
+      <WarningModal
+        show={showWarning}
+        title="Game in Progress"
+        message="You have active bets or the wheel is spinning. If you leave now, you may lose your bets. Are you sure you want to leave?"
+        onConfirm={() => {
+          setShowWarning(false);
+          confirmNavigation();
+        }}
+        onCancel={() => {
+          setShowWarning(false);
+          cancelNavigation();
+        }}
+      />
+
+      <WarningModal
+        show={showResumePrompt}
+        title="Resume Game?"
+        message="You have saved bets on the Roulette table. Would you like to resume where you left off?"
+        onConfirm={handleLoadGame}
+        onCancel={handleNewGame}
+        confirmText="Resume"
+        cancelText="New Game"
+      />
     </div>
   );
 };

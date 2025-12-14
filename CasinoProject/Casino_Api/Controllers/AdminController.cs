@@ -28,9 +28,9 @@ public class AdminController : ControllerBase
 
             var dashboard = new AdminDashboardResponse
             {
-                UserStats = await GetUserStatistics(),
-                TransactionStats = await GetTransactionStatistics(),
-                GameStats = await GetGameStatistics()
+                UserStats = await GetUserStatisticsData(),
+                TransactionStats = await GetTransactionStatisticsData(),
+                GameStats = await GetGameStatisticsData()
             };
 
             return Ok(dashboard);
@@ -44,6 +44,20 @@ public class AdminController : ControllerBase
 
     [HttpGet("users")]
     public async Task<ActionResult<UserStatistics>> GetUserStatistics()
+    {
+        try
+        {
+            var stats = await GetUserStatisticsData();
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching user statistics");
+            return StatusCode(500, new { message = "Error fetching user statistics" });
+        }
+    }
+
+    private async Task<UserStatistics> GetUserStatisticsData()
     {
         try
         {
@@ -86,7 +100,7 @@ public class AdminController : ControllerBase
                 })
                 .ToListAsync();
 
-            return Ok(new UserStatistics
+            return new UserStatistics
             {
                 TotalUsers = totalUsers,
                 ActiveUsers = activeUsers,
@@ -94,17 +108,31 @@ public class AdminController : ControllerBase
                 NewSignupsThisWeek = newSignupsThisWeek,
                 NewSignupsThisMonth = newSignupsThisMonth,
                 RecentUsers = recentUsers
-            });
+            };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching user statistics");
-            return StatusCode(500, new { message = "Error fetching user statistics" });
+            _logger.LogError(ex, "Error in GetUserStatisticsData");
+            throw;
         }
     }
 
     [HttpGet("transactions")]
     public async Task<ActionResult<TransactionStatistics>> GetTransactionStatistics()
+    {
+        try
+        {
+            var stats = await GetTransactionStatisticsData();
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching transaction statistics");
+            return StatusCode(500, new { message = "Error fetching transaction statistics" });
+        }
+    }
+
+    private async Task<TransactionStatistics> GetTransactionStatisticsData()
     {
         try
         {
@@ -133,14 +161,14 @@ public class AdminController : ControllerBase
                 {
                     BetId = b.Id,
                     Username = b.User.Username,
-                    GameType = b.GameType,
+                    GameType = b.Game,
                     Amount = b.Amount,
-                    WinAmount = b.WinAmount,
+                    WinAmount = b.Payout,
                     CreatedAt = b.CreatedAt
                 })
                 .ToList();
 
-            return Ok(new TransactionStatistics
+            return new TransactionStatistics
             {
                 TotalVolume = totalVolume,
                 TodayVolume = todayVolume,
@@ -150,17 +178,31 @@ public class AdminController : ControllerBase
                 TodayTransactions = todayTransactions,
                 AverageTransactionAmount = averageTransaction,
                 RecentTransactions = recentTransactions
-            });
+            };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching transaction statistics");
-            return StatusCode(500, new { message = "Error fetching transaction statistics" });
+            _logger.LogError(ex, "Error in GetTransactionStatisticsData");
+            throw;
         }
     }
 
     [HttpGet("games")]
     public async Task<ActionResult<GameStatistics>> GetGameStatistics()
+    {
+        try
+        {
+            var stats = await GetGameStatisticsData();
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching game statistics");
+            return StatusCode(500, new { message = "Error fetching game statistics" });
+        }
+    }
+
+    private async Task<GameStatistics> GetGameStatisticsData()
     {
         try
         {
@@ -177,22 +219,22 @@ public class AdminController : ControllerBase
             var gamesThisMonth = allBets.Count(b => b.CreatedAt >= monthAgo);
 
             var totalWagered = allBets.Sum(b => b.Amount);
-            var totalWon = allBets.Sum(b => b.WinAmount ?? 0);
+            var totalWon = allBets.Sum(b => b.Payout);
             var houseEdge = totalWagered > 0 ? ((totalWagered - totalWon) / totalWagered) * 100 : 0;
 
             var gameTypeStats = allBets
-                .GroupBy(b => b.GameType)
+                .GroupBy(b => b.Game)
                 .Select(g => new GameTypeStats
                 {
                     GameType = g.Key,
                     GamesPlayed = g.Count(),
                     TotalWagered = g.Sum(b => b.Amount),
-                    TotalWon = g.Sum(b => b.WinAmount ?? 0),
-                    WinRate = g.Any() ? (decimal)g.Count(b => (b.WinAmount ?? 0) > 0) / g.Count() * 100 : 0
+                    TotalWon = g.Sum(b => b.Payout),
+                    WinRate = g.Any() ? (decimal)g.Count(b => b.Payout > 0) / g.Count() * 100 : 0
                 })
                 .ToList();
 
-            return Ok(new GameStatistics
+            return new GameStatistics
             {
                 TotalGamesPlayed = totalGames,
                 GamesToday = gamesToday,
@@ -202,12 +244,12 @@ public class AdminController : ControllerBase
                 TotalWon = totalWon,
                 HouseEdge = houseEdge,
                 GameTypeStatistics = gameTypeStats
-            });
+            };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching game statistics");
-            return StatusCode(500, new { message = "Error fetching game statistics" });
+            _logger.LogError(ex, "Error in GetGameStatisticsData");
+            throw;
         }
     }
 }

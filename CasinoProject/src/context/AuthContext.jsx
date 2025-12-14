@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext();
+const API_URL = 'http://localhost:5001/api';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -60,51 +62,107 @@ export const AuthProvider = ({ children }) => {
     }
   }, [balance, transactions, gameHistory, stats, user]);
 
-  const login = (email, password) => {
-    // Mock login - replace with actual API call later
-    // Check if admin login
-    const isAdminLogin = email === 'admin@silverslayed.com';
-    
-    const mockUser = {
-      id: '1',
-      email: email,
-      name: email.split('@')[0],
-      joinDate: new Date().toISOString(),
-      role: isAdminLogin ? 'admin' : 'user',
-      settings: {
-        notifications: true,
-        emailUpdates: true,
-        soundEffects: true,
-        animations: true,
-        language: 'en'
+  const login = async (email, password) => {
+    try {
+      console.log('Attempting login to:', `${API_URL}/auth/login`);
+      console.log('Email:', email);
+      
+      const response = await axios.post(`${API_URL}/auth/login`, {
+        email: email,
+        password: password
+      }, {
+        headers: {
+          'X-API-KEY': 'default_tenant_api_key_12345'
+        }
+      });
+
+      console.log('Login response:', response.data);
+      const { token, user: userData } = response.data;
+      
+      const isAdminLogin = email === 'admin@casinoapi.com' || email === 'admin@silverslayed.com';
+      
+      const user = {
+        id: userData.id,
+        email: userData.email,
+        name: userData.username,
+        joinDate: userData.createdAt,
+        role: isAdminLogin ? 'admin' : 'user',
+        settings: {
+          notifications: true,
+          emailUpdates: true,
+          soundEffects: true,
+          animations: true,
+          language: 'en'
+        }
+      };
+
+      setUser(user);
+      setBalance(userData.balance);
+      setIsAdmin(isAdminLogin);
+      
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+      localStorage.setItem('balance', userData.balance.toString());
+      localStorage.setItem('isAdmin', isAdminLogin.toString());
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Login error:', error);
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      
+      let errorMessage = 'Login failed';
+      
+      if (error.code === 'ERR_NETWORK') {
+        errorMessage = 'Cannot connect to server. Please ensure the API is running on port 5001.';
+      } else if (error.response) {
+        errorMessage = error.response.data?.message || error.response.data?.Message || `Server error: ${error.response.status}`;
+      } else if (error.request) {
+        errorMessage = 'No response from server. Please check your connection.';
       }
-    };
-    setUser(mockUser);
-    setIsAdmin(isAdminLogin);
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    localStorage.setItem('isAdmin', isAdminLogin.toString());
-    return { success: true };
+      
+      return { success: false, message: errorMessage };
+    }
   };
 
-  const register = (email, password, name) => {
-    // Mock registration - replace with actual API call later
-    const mockUser = {
-      id: Date.now().toString(),
-      email: email,
-      name: name || email.split('@')[0],
-      joinDate: new Date().toISOString(),
-      settings: {
-        notifications: true,
-        emailUpdates: true,
-        soundEffects: true,
-        animations: true,
-        language: 'en'
-      }
-    };
-    setUser(mockUser);
-    setBalance(15000); // Welcome bonus
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    return { success: true, message: 'Welcome bonus: 15,000 chips added!' };
+  const register = async (email, password, name) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/register`, {
+        username: name || email.split('@')[0],
+        email: email,
+        password: password
+      }, {
+        headers: {
+          'X-API-KEY': 'default_tenant_api_key_12345'
+        }
+      });
+
+      const userData = response.data;
+      const user = {
+        id: userData.id,
+        email: userData.email,
+        name: userData.username,
+        joinDate: userData.createdAt,
+        settings: {
+          notifications: true,
+          emailUpdates: true,
+          soundEffects: true,
+          animations: true,
+          language: 'en'
+        }
+      };
+
+      setUser(user);
+      setBalance(userData.balance);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('balance', userData.balance.toString());
+      
+      return { success: true, message: 'Welcome bonus: 1,000 chips added!' };
+    } catch (error) {
+      console.error('Registration error:', error);
+      const errorMessage = error.response?.data?.message || error.response?.data?.Message || 'Registration failed';
+      return { success: false, message: errorMessage };
+    }
   };
 
   const logout = () => {
