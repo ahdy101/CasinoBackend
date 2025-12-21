@@ -1,247 +1,247 @@
-using Casino.Backend.Data;
 using Casino.Backend.Infrastructure;
 using Casino.Backend.Models;
 using Casino.Backend.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using Casino.Backend.Repositories.Interfaces;
 using System.Text.Json;
 
 namespace Casino.Backend.Services.Implementations
 {
     /// <summary>
     /// Blackjack game engine implementation
-  /// Rules: Dealer hits on soft 17, Blackjack pays 3:2, Standard doubling and splitting
+    /// Rules: Dealer hits on soft 17, Blackjack pays 3:2, Standard doubling and splitting
     /// </summary>
-    public class BlackjackEngine : IBlackjackEngine
-    {
-        private readonly AppDbContext _db;
-        private readonly ICardDeckFactory _deckFactory;
+  public class BlackjackEngine : IBlackjackEngine
+ {
+     private readonly IBlackjackGameRepository _gameRepository;
+  private readonly ICardDeckFactory _deckFactory;
         private readonly ILogger<BlackjackEngine> _logger;
 
-      public BlackjackEngine(AppDbContext db, ICardDeckFactory deckFactory, ILogger<BlackjackEngine> logger)
+        public BlackjackEngine(
+       IBlackjackGameRepository gameRepository, 
+    ICardDeckFactory deckFactory, 
+     ILogger<BlackjackEngine> logger)
         {
-            _db = db;
-      _deckFactory = deckFactory;
-         _logger = logger;
+            _gameRepository = gameRepository;
+     _deckFactory = deckFactory;
+    _logger = logger;
+        }
+
+        /// <summary>
+     /// Initialize a new Blackjack game
+        /// </summary>
+public async Task<BlackjackGameState> InitializeGame(int userId, decimal betAmount)
+ {
+            _logger.LogInformation("InitializeGame - UserId: {UserId}, Bet: {Bet}", userId, betAmount);
+
+       // Create and shuffle deck (use 6 decks for realistic casino simulation)
+ var deck = _deckFactory.CreateMultipleDecks(6);
+       _deckFactory.Shuffle(deck);
+
+            // Deal initial cards
+      var playerHand = new List<Card> { deck[0], deck[2] };
+            var dealerHand = new List<Card> { deck[1], deck[3] };
+
+            // Calculate totals
+          var playerTotal = CalculateHandTotal(playerHand);
+      var dealerTotal = CalculateHandTotal(new List<Card> { dealerHand[0] }); // Only show dealer's first card
+
+            // Check for immediate blackjack
+    var status = playerTotal == 21 ? GameStatus.PlayerBlackjack : GameStatus.Active;
+
+            // Create game entity
+            var game = new BlackjackGame
+            {
+       UserId = userId,
+           BetAmount = betAmount,
+      PlayerCards = JsonSerializer.Serialize(playerHand),
+                DealerCards = JsonSerializer.Serialize(dealerHand),
+        PlayerTotal = playerTotal,
+         DealerTotal = dealerTotal,
+  Status = status.ToString(),
+         CreatedAt = DateTime.UtcNow
+            };
+
+            // If player has blackjack, dealer plays immediately
+if (status == GameStatus.PlayerBlackjack)
+          {
+var dealerFinalTotal = CalculateHandTotal(dealerHand);
+         if (dealerFinalTotal == 21)
+    {
+      game.Status = GameStatus.Push.ToString();
+          game.Payout = betAmount; // Return original bet
+                }
+        else
+        {
+        game.Payout = betAmount * 2.5m; // Blackjack pays 3:2 (bet + 1.5x bet)
+     }
+      game.CompletedAt = DateTime.UtcNow;
+          }
+
+        await _gameRepository.AddAsync(game);
+
+            _logger.LogInformation("InitializeGame complete - GameId: {GameId}, PlayerTotal: {PlayerTotal}", 
+      game.Id, playerTotal);
+
+  return MapToGameState(game, playerHand, dealerHand, status == GameStatus.PlayerBlackjack);
      }
 
         /// <summary>
-        /// Initialize a new Blackjack game
-        /// </summary>
-        public async Task<BlackjackGameState> InitializeGame(int userId, decimal betAmount)
-        {
-            _logger.LogInformation("InitializeGame - UserId: {UserId}, Bet: {Bet}", userId, betAmount);
-
-    // Create and shuffle deck (use 6 decks for realistic casino simulation)
-            var deck = _deckFactory.CreateMultipleDecks(6);
-            _deckFactory.Shuffle(deck);
-
-            // Deal initial cards
-   var playerHand = new List<Card> { deck[0], deck[2] };
-            var dealerHand = new List<Card> { deck[1], deck[3] };
-            int deckIndex = 4;
-
-     // Calculate totals
-        var playerTotal = CalculateHandTotal(playerHand);
-   var dealerTotal = CalculateHandTotal(new List<Card> { dealerHand[0] }); // Only show dealer's first card
-
-            // Check for immediate blackjack
-            var status = playerTotal == 21 ? GameStatus.PlayerBlackjack : GameStatus.Active;
-
-   // Create game entity
-            var game = new BlackjackGame
-       {
-          UserId = userId,
-           BetAmount = betAmount,
-      PlayerCards = JsonSerializer.Serialize(playerHand),
-       DealerCards = JsonSerializer.Serialize(dealerHand),
-      PlayerTotal = playerTotal,
-      DealerTotal = dealerTotal,
-     Status = status.ToString(),
-                CreatedAt = DateTime.UtcNow
-          };
-
-            // If player has blackjack, dealer plays immediately
-   if (status == GameStatus.PlayerBlackjack)
-            {
-           var dealerFinalTotal = CalculateHandTotal(dealerHand);
-       if (dealerFinalTotal == 21)
-            {
-          game.Status = GameStatus.Push.ToString();
-game.Payout = betAmount; // Return original bet
-                }
-                else
-       {
-           game.Payout = betAmount * 2.5m; // Blackjack pays 3:2 (bet + 1.5x bet)
- }
-        game.CompletedAt = DateTime.UtcNow;
- }
-
-      _db.BlackjackGames.Add(game);
-  await _db.SaveChangesAsync();
-
-    _logger.LogInformation("InitializeGame complete - GameId: {GameId}, PlayerTotal: {PlayerTotal}", 
-            game.Id, playerTotal);
-
-      return MapToGameState(game, playerHand, dealerHand, status == GameStatus.PlayerBlackjack);
-        }
-
-     /// <summary>
         /// Player hits (draws a card)
-        /// </summary>
+     /// </summary>
         public async Task<BlackjackGameState> Hit(int gameId, int userId)
-      {
-         _logger.LogInformation("Hit - GameId: {GameId}, UserId: {UserId}", gameId, userId);
+     {
+            _logger.LogInformation("Hit - GameId: {GameId}, UserId: {UserId}", gameId, userId);
 
-      var game = await _db.BlackjackGames.FindAsync(gameId);
-        if (game == null || game.UserId != userId)
-    throw new InvalidOperationException("Game not found or access denied");
+            var game = await _gameRepository.GetByIdAsync(gameId);
+            if (game == null || game.UserId != userId)
+ throw new InvalidOperationException("Game not found or access denied");
 
-            if (game.Status != "Active")
-             throw new InvalidOperationException("Game is not active");
+    if (game.Status != "Active")
+  throw new InvalidOperationException("Game is not active");
 
             // Deserialize hands
-        var playerHand = JsonSerializer.Deserialize<List<Card>>(game.PlayerCards) ?? new List<Card>();
-  var dealerHand = JsonSerializer.Deserialize<List<Card>>(game.DealerCards) ?? new List<Card>();
+     var playerHand = JsonSerializer.Deserialize<List<Card>>(game.PlayerCards) ?? new List<Card>();
+          var dealerHand = JsonSerializer.Deserialize<List<Card>>(game.DealerCards) ?? new List<Card>();
 
-            // Deal one card to player
-      var deck = _deckFactory.CreateMultipleDecks(6);
-       _deckFactory.Shuffle(deck);
-            playerHand.Add(deck[0]);
+    // Deal one card to player
+   var deck = _deckFactory.CreateMultipleDecks(6);
+  _deckFactory.Shuffle(deck);
+         playerHand.Add(deck[0]);
 
-      // Calculate new total
-  var playerTotal = CalculateHandTotal(playerHand);
-            game.PlayerTotal = playerTotal;
-game.PlayerCards = JsonSerializer.Serialize(playerHand);
+            // Calculate new total
+    var playerTotal = CalculateHandTotal(playerHand);
+         game.PlayerTotal = playerTotal;
+            game.PlayerCards = JsonSerializer.Serialize(playerHand);
 
-   // Check for bust
-     if (playerTotal > 21)
- {
-       game.Status = GameStatus.PlayerBust.ToString();
+        // Check for bust
+            if (playerTotal > 21)
+            {
+    game.Status = GameStatus.PlayerBust.ToString();
       game.Payout = 0m; // Player loses
-     game.CompletedAt = DateTime.UtcNow;
-                await _db.SaveChangesAsync();
+         game.CompletedAt = DateTime.UtcNow;
+     await _gameRepository.UpdateAsync(game);
 
-  _logger.LogInformation("Hit - Player bust. GameId: {GameId}, Total: {Total}", gameId, playerTotal);
-             return MapToGameState(game, playerHand, dealerHand, true);
-     }
+           _logger.LogInformation("Hit - Player bust. GameId: {GameId}, Total: {Total}", gameId, playerTotal);
+          return MapToGameState(game, playerHand, dealerHand, true);
+}
 
-            await _db.SaveChangesAsync();
-  return MapToGameState(game, playerHand, dealerHand, false);
+      await _gameRepository.UpdateAsync(game);
+            return MapToGameState(game, playerHand, dealerHand, false);
         }
 
-   /// <summary>
+  /// <summary>
         /// Player stands (ends their turn, dealer plays)
-        /// </summary>
+  /// </summary>
         public async Task<BlackjackGameState> Stand(int gameId, int userId)
-      {
+        {
             _logger.LogInformation("Stand - GameId: {GameId}, UserId: {UserId}", gameId, userId);
 
-       var game = await _db.BlackjackGames.FindAsync(gameId);
-if (game == null || game.UserId != userId)
+     var game = await _gameRepository.GetByIdAsync(gameId);
+     if (game == null || game.UserId != userId)
            throw new InvalidOperationException("Game not found or access denied");
 
  if (game.Status != "Active")
-                throw new InvalidOperationException("Game is not active");
+       throw new InvalidOperationException("Game is not active");
 
-            // Deserialize hands
-      var playerHand = JsonSerializer.Deserialize<List<Card>>(game.PlayerCards) ?? new List<Card>();
-   var dealerHand = JsonSerializer.Deserialize<List<Card>>(game.DealerCards) ?? new List<Card>();
+   // Deserialize hands
+            var playerHand = JsonSerializer.Deserialize<List<Card>>(game.PlayerCards) ?? new List<Card>();
+            var dealerHand = JsonSerializer.Deserialize<List<Card>>(game.DealerCards) ?? new List<Card>();
 
-      // Dealer plays (hits until 17 or higher)
-       var deck = _deckFactory.CreateMultipleDecks(6);
-          _deckFactory.Shuffle(deck);
-        int deckIndex = 0;
+        // Dealer plays (hits until 17 or higher)
+            var deck = _deckFactory.CreateMultipleDecks(6);
+       _deckFactory.Shuffle(deck);
+            int deckIndex = 0;
 
    var dealerTotal = CalculateHandTotal(dealerHand);
-  while (dealerTotal < 17)
+       while (dealerTotal < 17)
             {
-    dealerHand.Add(deck[deckIndex++]);
-     dealerTotal = CalculateHandTotal(dealerHand);
-         }
+                dealerHand.Add(deck[deckIndex++]);
+      dealerTotal = CalculateHandTotal(dealerHand);
+            }
 
-        game.DealerCards = JsonSerializer.Serialize(dealerHand);
+            game.DealerCards = JsonSerializer.Serialize(dealerHand);
             game.DealerTotal = dealerTotal;
 
-        // Determine winner
-   var playerTotal = game.PlayerTotal;
-     
-        if (dealerTotal > 21)
+            // Determine winner
+     var playerTotal = game.PlayerTotal;
+            
+   if (dealerTotal > 21)
+    {
+  game.Status = GameStatus.DealerBust.ToString();
+       game.Payout = game.BetAmount * 2m; // Player wins (bet + bet)
+            }
+   else if (playerTotal > dealerTotal)
+  {
+         game.Status = GameStatus.PlayerWin.ToString();
+     game.Payout = game.BetAmount * 2m;
+            }
+ else if (dealerTotal > playerTotal)
+       {
+         game.Status = GameStatus.DealerWin.ToString();
+       game.Payout = 0m; // Player loses
+   }
+            else
         {
-       game.Status = GameStatus.DealerBust.ToString();
-         game.Payout = game.BetAmount * 2m; // Player wins (bet + bet)
-            }
-       else if (playerTotal > dealerTotal)
-            {
-     game.Status = GameStatus.PlayerWin.ToString();
-         game.Payout = game.BetAmount * 2m;
-          }
-            else if (dealerTotal > playerTotal)
-            {
-                game.Status = GameStatus.DealerWin.ToString();
-                game.Payout = 0m; // Player loses
-            }
-       else
-   {
-         game.Status = GameStatus.Push.ToString();
-   game.Payout = game.BetAmount; // Return original bet
-    }
-
-    game.CompletedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
-
-   _logger.LogInformation("Stand complete - GameId: {GameId}, Status: {Status}, Payout: {Payout}", 
-   gameId, game.Status, game.Payout);
-
-    return MapToGameState(game, playerHand, dealerHand, true);
-  }
-
-        /// <summary>
-/// Player doubles down (double bet, one card, then stand)
-        /// </summary>
-        public async Task<BlackjackGameState> DoubleDown(int gameId, int userId)
- {
-            _logger.LogInformation("DoubleDown - GameId: {GameId}, UserId: {UserId}", gameId, userId);
-
-          var game = await _db.BlackjackGames.FindAsync(gameId);
-            if (game == null || game.UserId != userId)
-     throw new InvalidOperationException("Game not found or access denied");
-
-        if (game.Status != "Active")
-     throw new InvalidOperationException("Game is not active");
-
-   var playerHand = JsonSerializer.Deserialize<List<Card>>(game.PlayerCards) ?? new List<Card>();
-        
-    // Can only double down on initial two cards
-            if (playerHand.Count != 2)
-      throw new InvalidOperationException("Can only double down on initial hand");
-
-            // Double the bet
-            game.BetAmount *= 2;
-
-   // Deal one card
-   var deck = _deckFactory.CreateMultipleDecks(6);
-  _deckFactory.Shuffle(deck);
-    playerHand.Add(deck[0]);
-
-            var playerTotal = CalculateHandTotal(playerHand);
-            game.PlayerTotal = playerTotal;
-            game.PlayerCards = JsonSerializer.Serialize(playerHand);
-
- // If bust, game over
-if (playerTotal > 21)
-     {
-       game.Status = GameStatus.PlayerBust.ToString();
-       game.Payout = 0m;
-                game.CompletedAt = DateTime.UtcNow;
-      await _db.SaveChangesAsync();
-        
-           var dealerHand = JsonSerializer.Deserialize<List<Card>>(game.DealerCards) ?? new List<Card>();
-    return MapToGameState(game, playerHand, dealerHand, true);
+            game.Status = GameStatus.Push.ToString();
+      game.Payout = game.BetAmount; // Return original bet
    }
 
+            game.CompletedAt = DateTime.UtcNow;
+   await _gameRepository.UpdateAsync(game);
+
+        _logger.LogInformation("Stand complete - GameId: {GameId}, Status: {Status}, Payout: {Payout}", 
+                gameId, game.Status, game.Payout);
+
+        return MapToGameState(game, playerHand, dealerHand, true);
+        }
+
+  /// <summary>
+        /// Player doubles down (double bet, one card, then stand)
+        /// </summary>
+        public async Task<BlackjackGameState> DoubleDown(int gameId, int userId)
+        {
+    _logger.LogInformation("DoubleDown - GameId: {GameId}, UserId: {UserId}", gameId, userId);
+
+            var game = await _gameRepository.GetByIdAsync(gameId);
+      if (game == null || game.UserId != userId)
+          throw new InvalidOperationException("Game not found or access denied");
+
+            if (game.Status != "Active")
+    throw new InvalidOperationException("Game is not active");
+
+            var playerHand = JsonSerializer.Deserialize<List<Card>>(game.PlayerCards) ?? new List<Card>();
+          
+            // Can only double down on initial two cards
+          if (playerHand.Count != 2)
+       throw new InvalidOperationException("Can only double down on initial hand");
+
+          // Double the bet
+       game.BetAmount *= 2;
+
+            // Deal one card
+  var deck = _deckFactory.CreateMultipleDecks(6);
+  _deckFactory.Shuffle(deck);
+        playerHand.Add(deck[0]);
+
+      var playerTotal = CalculateHandTotal(playerHand);
+            game.PlayerTotal = playerTotal;
+  game.PlayerCards = JsonSerializer.Serialize(playerHand);
+
+   // If bust, game over
+            if (playerTotal > 21)
+ {
+        game.Status = GameStatus.PlayerBust.ToString();
+         game.Payout = 0m;
+          game.CompletedAt = DateTime.UtcNow;
+             await _gameRepository.UpdateAsync(game);
+          
+                var dealerHand = JsonSerializer.Deserialize<List<Card>>(game.DealerCards) ?? new List<Card>();
+       return MapToGameState(game, playerHand, dealerHand, true);
+    }
+
             // Otherwise, automatically stand
-            await _db.SaveChangesAsync();
-     return await Stand(gameId, userId);
+ await _gameRepository.UpdateAsync(game);
+            return await Stand(gameId, userId);
         }
 
         /// <summary>

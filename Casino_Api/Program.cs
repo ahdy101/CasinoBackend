@@ -3,17 +3,24 @@ using Casino.Backend.Infrastructure;
 using Casino.Backend.Services;
 using Casino.Backend.Services.Implementations;
 using Casino.Backend.Services.Interfaces;
+using Casino.Backend.Repositories.Interfaces;
+using Casino.Backend.Repositories.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Add DB context
-builder.Services.AddDbContext<AppDbContext>(options =>
- options.UseMySql(conn, ServerVersion.AutoDetect(conn)));
+// Register Dapper Database Connection Factory
+builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+
+// Register Dapper Repositories
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IBetRepository, BetRepository>();
+builder.Services.AddScoped<IBlackjackGameRepository, BlackjackGameRepository>();
+builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
+builder.Services.AddScoped<ITenantApiKeyRepository, TenantApiKeyRepository>();
 
 // JWT Auth
 var jwtKey = builder.Configuration["Jwt:Key"];

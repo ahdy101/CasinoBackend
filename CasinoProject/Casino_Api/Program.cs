@@ -85,18 +85,42 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add Swagger/OpenAPI - Simplified (no security schemes)
+// Add Swagger/OpenAPI - Add Authorization support
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "The Silver Slayed Casino API",
-    Version = "v1",
-     Description = "Luxury online casino API with bearer token authentication"
+        Version = "v1",
+        Description = "Luxury online casino API with bearer token authentication"
     });
 
-    // No security definitions - bearer token is a regular parameter
+    // Add JWT Bearer authentication to Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Enter your token in the text input below.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+    new OpenApiSecurityScheme
+ {
+       Reference = new OpenApiReference
+       {
+        Type = ReferenceType.SecurityScheme,
+      Id = "Bearer"
+        }
+        },
+   Array.Empty<string>()
+     }
+    });
 });
 
 var app = builder.Build();

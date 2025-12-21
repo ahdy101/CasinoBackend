@@ -1,8 +1,6 @@
-using Casino.Backend.Data;
 using Casino.Backend.Models;
+using Casino.Backend.Repositories.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
 
 namespace Casino.Backend.Controllers
 {
@@ -10,27 +8,39 @@ namespace Casino.Backend.Controllers
  [Route("api/[controller]")]
  public class AdminUsersController : ControllerBase
  {
- private readonly AppDbContext _db;
- public AdminUsersController(AppDbContext db) { _db = db; }
+  private readonly IAdminUserRepository _adminUserRepository;
+  private readonly ITenantApiKeyRepository _tenantApiKeyRepository;
 
- private bool IsApiKeyValid(string apiKey)
+  public AdminUsersController(
+      IAdminUserRepository adminUserRepository,
+  ITenantApiKeyRepository tenantApiKeyRepository)
+  {
+ _adminUserRepository = adminUserRepository;
+ _tenantApiKeyRepository = tenantApiKeyRepository;
+ }
+
+ private async Task<bool> IsApiKeyValid(string apiKey)
  {
- return !string.IsNullOrEmpty(apiKey) && _db.TenantApiKeys.Any(k => k.ApiKey == apiKey);
+  return await _tenantApiKeyRepository.ValidateApiKeyAsync(apiKey);
  }
 
  [HttpGet]
  public async Task<IActionResult> GetAll([FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey)) return Unauthorized("Invalid or missing API key.");
- var admins = await _db.AdminUsers.ToListAsync();
+   if (!await IsApiKeyValid(apiKey)) 
+       return Unauthorized("Invalid or missing API key.");
+       
+ var admins = await _adminUserRepository.GetAllAsync();
  return Ok(admins);
  }
 
  [HttpGet("{id}")]
  public async Task<IActionResult> Get(int id, [FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey)) return Unauthorized("Invalid or missing API key.");
- var admin = await _db.AdminUsers.FindAsync(id);
+  if (!await IsApiKeyValid(apiKey)) 
+    return Unauthorized("Invalid or missing API key.");
+      
+ var admin = await _adminUserRepository.GetByIdAsync(id);
  if (admin == null) return NotFound();
  return Ok(admin);
  }
@@ -38,40 +48,47 @@ namespace Casino.Backend.Controllers
  [HttpPost]
  public async Task<IActionResult> Create([FromBody] AdminUser admin, [FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey)) return Unauthorized("Invalid or missing API key.");
+  if (!await IsApiKeyValid(apiKey)) 
+       return Unauthorized("Invalid or missing API key.");
+       
  // Hash password if not already hashed
  if (!admin.PasswordHash.StartsWith("$2a$") && !admin.PasswordHash.StartsWith("$2b$") && !admin.PasswordHash.StartsWith("$2y$"))
  {
  admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(admin.PasswordHash);
  }
- _db.AdminUsers.Add(admin);
- await _db.SaveChangesAsync();
- return CreatedAtAction(nameof(Get), new { id = admin.Id }, admin);
+ 
+ await _adminUserRepository.AddAsync(admin);
+ return CreatedAtAction(nameof(Get), new { id = admin.Id, apiKey }, admin);
  }
 
  [HttpPut("{id}")]
  public async Task<IActionResult> Update(int id, [FromBody] AdminUser admin, [FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey)) return Unauthorized("Invalid or missing API key.");
+  if (!await IsApiKeyValid(apiKey)) 
+       return Unauthorized("Invalid or missing API key.");
+  
  if (id != admin.Id) return BadRequest();
+ 
  // Hash password if not already hashed
  if (!admin.PasswordHash.StartsWith("$2a$") && !admin.PasswordHash.StartsWith("$2b$") && !admin.PasswordHash.StartsWith("$2y$"))
  {
  admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(admin.PasswordHash);
  }
- _db.Entry(admin).State = EntityState.Modified;
- await _db.SaveChangesAsync();
+ 
+ await _adminUserRepository.UpdateAsync(admin);
  return NoContent();
  }
 
  [HttpDelete("{id}")]
  public async Task<IActionResult> Delete(int id, [FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey)) return Unauthorized("Invalid or missing API key.");
- var admin = await _db.AdminUsers.FindAsync(id);
+  if (!await IsApiKeyValid(apiKey)) 
+      return Unauthorized("Invalid or missing API key.");
+      
+ var admin = await _adminUserRepository.GetByIdAsync(id);
  if (admin == null) return NotFound();
- _db.AdminUsers.Remove(admin);
- await _db.SaveChangesAsync();
+ 
+ await _adminUserRepository.DeleteAsync(id);
  return NoContent();
  }
  }

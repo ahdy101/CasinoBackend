@@ -1,7 +1,6 @@
-﻿using Casino.Backend.Data;
-using Casino.Backend.Models;
+﻿using Casino.Backend.Models;
 using Casino.Backend.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using Casino.Backend.Repositories.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -11,13 +10,16 @@ namespace Casino.Backend.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly AppDbContext _db;
+        private readonly IUserRepository _userRepository;
         private readonly IConfiguration _config;
         private readonly ILogger<AuthService> _logger;
 
-        public AuthService(AppDbContext db, IConfiguration config, ILogger<AuthService> logger)
+        public AuthService(
+            IUserRepository userRepository,
+            IConfiguration config,
+            ILogger<AuthService> logger)
         {
-            _db = db;
+            _userRepository = userRepository;
             _config = config;
             _logger = logger;
         }
@@ -26,7 +28,7 @@ namespace Casino.Backend.Services
         {
             _logger.LogInformation("RegisterAsync - Username: {Username}", username);
 
-            if (await _db.Users.AnyAsync(u => u.Username == username))
+            if (await _userRepository.UsernameExistsAsync(username))
             {
                 _logger.LogWarning("RegisterAsync - Username already taken: {Username}", username);
                 throw new Exception("Username taken");
@@ -41,8 +43,7 @@ namespace Casino.Backend.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
+            await _userRepository.AddAsync(user);
 
             _logger.LogInformation("RegisterAsync successful - UserId: {UserId}, Username: {Username}", user.Id, username);
             return user;
@@ -52,7 +53,7 @@ namespace Casino.Backend.Services
         {
             _logger.LogInformation("LoginAsync - Username: {Username}", username);
 
-            var user = await _db.Users.SingleOrDefaultAsync(u => u.Username == username);
+            var user = await _userRepository.GetByUsernameAsync(username);
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 _logger.LogWarning("LoginAsync - Invalid credentials for username: {Username}", username);
@@ -78,14 +79,14 @@ namespace Casino.Backend.Services
 
         public async Task<bool> IsUsernameAvailable(string username)
         {
-            return !await _db.Users.AnyAsync(u => u.Username == username);
+            return !await _userRepository.UsernameExistsAsync(username);
         }
 
         public async Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
         {
             _logger.LogInformation("ChangePasswordAsync - UserId: {UserId}", userId);
 
-            var user = await _db.Users.FindAsync(userId);
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
                 _logger.LogWarning("ChangePasswordAsync - User not found: {UserId}", userId);
@@ -99,7 +100,7 @@ namespace Casino.Backend.Services
             }
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
-            await _db.SaveChangesAsync();
+            await _userRepository.UpdateAsync(user);
 
             _logger.LogInformation("ChangePasswordAsync successful - UserId: {UserId}", userId);
             return true;

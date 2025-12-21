@@ -130,22 +130,21 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Get current user information (Requires: Bearer token in Authorization header)
     /// </summary>
-    /// <param name="authorization">Format: Bearer {your_access_token}</param>
     [HttpGet("me")]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetMe(
-        [FromHeader(Name = "Authorization")] string? authorization)
+    public async Task<IActionResult> GetMe()
     {
-        // Try to get from parameter first, then fallback to Request.Headers
-        if (string.IsNullOrEmpty(authorization))
-        {
-            authorization = Request.Headers["Authorization"].FirstOrDefault();
-        }
+        // Read directly from Request.Headers
+        var authorization = Request.Headers["Authorization"].FirstOrDefault();
+        
+        // Debug: Log what we're receiving
+        Console.WriteLine($"[DEBUG] Authorization from headers: {authorization ?? "NULL"}");
+    Console.WriteLine($"[DEBUG] All headers: {string.Join(", ", Request.Headers.Keys)}");
 
-        if (string.IsNullOrEmpty(authorization))
+     if (string.IsNullOrEmpty(authorization))
         {
-            return Unauthorized(new ErrorResponse("Authorization header is required. Format: Bearer {token}"));
+ return Unauthorized(new ErrorResponse("Authorization header is required. Format: Bearer {token}"));
         }
 
         var validation = _tokenValidator.ValidateToken(authorization);
@@ -155,7 +154,7 @@ public class AuthController : ControllerBase
         var result = await _authService.GetUserById(validation.UserId);
 
         if (!result.Success)
-            return NotFound(new ErrorResponse(result.Message));
+         return NotFound(new ErrorResponse(result.Message));
 
         return Ok(result.User);
     }

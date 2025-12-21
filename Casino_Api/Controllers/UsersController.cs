@@ -1,10 +1,8 @@
-using Casino.Backend.Data;
 using Casino.Backend.DTOs.Requests;
 using Casino.Backend.DTOs.Responses;
 using Casino.Backend.Models;
+using Casino.Backend.Repositories.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
 
 namespace Casino.Backend.Controllers
 {
@@ -12,18 +10,23 @@ namespace Casino.Backend.Controllers
  [Route("api/[controller]")]
  public class UsersController : ControllerBase
  {
- private readonly AppDbContext _db;
+private readonly IUserRepository _userRepository;
+  private readonly ITenantApiKeyRepository _tenantApiKeyRepository;
  private readonly ILogger<UsersController> _logger;
 
- public UsersController(AppDbContext db, ILogger<UsersController> logger)
+ public UsersController(
+      IUserRepository userRepository,
+     ITenantApiKeyRepository tenantApiKeyRepository,
+     ILogger<UsersController> logger)
  {
- _db = db;
+ _userRepository = userRepository;
+  _tenantApiKeyRepository = tenantApiKeyRepository;
  _logger = logger;
  }
 
- private bool IsApiKeyValid(string apiKey)
+ private async Task<bool> IsApiKeyValid(string apiKey)
  {
- return !string.IsNullOrEmpty(apiKey) && _db.TenantApiKeys.Any(k => k.ApiKey == apiKey);
+  return await _tenantApiKeyRepository.ValidateApiKeyAsync(apiKey);
  }
 
  [HttpGet]
@@ -31,20 +34,19 @@ namespace Casino.Backend.Controllers
  [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
  public async Task<IActionResult> GetAll([FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey))
+   if (!await IsApiKeyValid(apiKey))
  return Unauthorized(new ErrorResponse { Message = "Invalid or missing API key." });
 
- var users = await _db.Users
- .Select(u => new UserResponse
+ var users = await _userRepository.GetAllAsync();
+   var response = users.Select(u => new UserResponse
  {
  Id = u.Id,
  Username = u.Username,
  Balance = u.Balance,
  CreatedAt = u.CreatedAt
- })
- .ToListAsync();
+ }).ToList();
 
- return Ok(users);
+ return Ok(response);
  }
 
  [HttpGet("{id}")]
@@ -52,10 +54,10 @@ namespace Casino.Backend.Controllers
  [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
  public async Task<IActionResult> Get(int id, [FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey))
+  if (!await IsApiKeyValid(apiKey))
  return Unauthorized(new ErrorResponse { Message = "Invalid or missing API key." });
 
- var user = await _db.Users.FindAsync(id);
+ var user = await _userRepository.GetByIdAsync(id);
  if (user == null)
  return NotFound(new ErrorResponse { Message = "User not found" });
 
@@ -75,7 +77,7 @@ namespace Casino.Backend.Controllers
  [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
  public async Task<IActionResult> Create([FromBody] CreateUserRequest request, [FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey))
+ if (!await IsApiKeyValid(apiKey))
  return Unauthorized(new ErrorResponse { Message = "Invalid or missing API key." });
 
  if (!ModelState.IsValid)
@@ -88,7 +90,7 @@ namespace Casino.Backend.Controllers
  }
 
  // Check if username already exists
- if (await _db.Users.AnyAsync(u => u.Username == request.Username))
+ if (await _userRepository.UsernameExistsAsync(request.Username))
  {
  return Conflict(new ErrorResponse { Message = "Username already taken" });
  }
@@ -104,8 +106,7 @@ namespace Casino.Backend.Controllers
  CreatedAt = DateTime.UtcNow
  };
 
- _db.Users.Add(user);
- await _db.SaveChangesAsync();
+ await _userRepository.AddAsync(user);
 
  var response = new UserResponse
  {
@@ -124,13 +125,13 @@ namespace Casino.Backend.Controllers
  [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
  public async Task<IActionResult> Update(int id, [FromBody] UpdateUserRequest request, [FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey))
+ if (!await IsApiKeyValid(apiKey))
  return Unauthorized(new ErrorResponse { Message = "Invalid or missing API key." });
 
  if (id != request.Id)
  return BadRequest(new ErrorResponse { Message = "ID mismatch" });
 
- var user = await _db.Users.FindAsync(id);
+ var user = await _userRepository.GetByIdAsync(id);
  if (user == null)
  return NotFound(new ErrorResponse { Message = "User not found" });
 
@@ -146,7 +147,7 @@ namespace Casino.Backend.Controllers
  user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
  }
 
- await _db.SaveChangesAsync();
+ await _userRepository.UpdateAsync(user);
  return NoContent();
  }
 
@@ -155,15 +156,14 @@ namespace Casino.Backend.Controllers
  [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
  public async Task<IActionResult> Delete(int id, [FromQuery] string apiKey)
  {
- if (!IsApiKeyValid(apiKey))
+ if (!await IsApiKeyValid(apiKey))
  return Unauthorized(new ErrorResponse { Message = "Invalid or missing API key." });
 
- var user = await _db.Users.FindAsync(id);
+ var user = await _userRepository.GetByIdAsync(id);
  if (user == null)
  return NotFound(new ErrorResponse { Message = "User not found" });
 
- _db.Users.Remove(user);
- await _db.SaveChangesAsync();
+ await _userRepository.DeleteAsync(id);
  return NoContent();
  }
  }
