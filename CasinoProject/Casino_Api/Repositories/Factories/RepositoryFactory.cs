@@ -1,9 +1,8 @@
 using Casino_Api.Data;
-using Casino_Api.Factories.Interfaces;
 using Casino_Api.Repositories.Implementations;
 using Casino_Api.Repositories.Interfaces;
 
-namespace Casino_Api.Factories.Implementations;
+namespace Casino_Api.Repositories.Factories;
 
 public class RepositoryFactory : IRepositoryFactory
 {

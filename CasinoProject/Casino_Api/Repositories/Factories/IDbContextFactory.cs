@@ -1,7 +1,7 @@
 using Casino_Api.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace Casino_Api.Factories.Interfaces;
+namespace Casino_Api.Repositories.Factories;
 
 public interface IDbContextFactory
 {

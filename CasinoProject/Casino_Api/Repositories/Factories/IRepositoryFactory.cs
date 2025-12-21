@@ -1,6 +1,6 @@
 using Casino_Api.Models;
 
-namespace Casino_Api.Factories.Interfaces;
+namespace Casino_Api.Repositories.Factories;
 
 public interface IRepositoryFactory
 {

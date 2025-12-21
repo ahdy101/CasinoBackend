@@ -15,3 +15,25 @@ public class UserResponse
     public decimal Balance { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
+/// <summary>
+/// OAuth2-style token response
+/// </summary>
+public class TokenResponse
+{
+    public string AccessToken { get; set; } = string.Empty;
+    public string TokenType { get; set; } = "Bearer";
+    public int ExpiresIn { get; set; } // seconds
+    public DateTime IssuedAt { get; set; }
+    public DateTime ExpiresAt { get; set; }
+    public UserResponse User { get; set; } = null!;
+}
+
+/// <summary>
+/// OAuth2 error response
+/// </summary>
+public class TokenErrorResponse
+{
+    public string Error { get; set; } = string.Empty;
+    public string ErrorDescription { get; set; } = string.Empty;
+}

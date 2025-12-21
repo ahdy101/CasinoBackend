@@ -1,5 +1,5 @@
 using Casino_Api.Data;
-using Casino_Api.Factories.Interfaces;
+using Casino_Api.Repositories.Factories;
 using Casino_Api.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 

@@ -1,7 +1,6 @@
 using Casino_Api.Data;
-using Casino_Api.Factories.Implementations;
-using Casino_Api.Factories.Interfaces;
-using Casino_Api.Infrastructure;
+using Casino_Api.Repositories.Factories;
+using Casino_Api.Services;
 using Casino_Api.Security;
 using Casino_Api.Services.Implementations;
 using Casino_Api.Services.Interfaces;

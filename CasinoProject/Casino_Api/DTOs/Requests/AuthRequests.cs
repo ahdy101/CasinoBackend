@@ -34,3 +34,21 @@ public class UpdateBalanceRequest
     [Range(0, double.MaxValue, ErrorMessage = "Balance must be a positive number")]
     public decimal Balance { get; set; }
 }
+
+/// <summary>
+/// OAuth2-style token request with grant_type parameter
+/// </summary>
+public class TokenRequest
+{
+    [Required(ErrorMessage = "grant_type is required")]
+    public string GrantType { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "username is required")]
+    public string Username { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "password is required")]
+    public string Password { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "webapi_key is required")]
+    public string WebApiKey { get; set; } = string.Empty;
+}

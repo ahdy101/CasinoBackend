@@ -10,4 +10,5 @@ public interface IAuthService
     Task<(bool Success, UserResponse? User, string Message)> GetUserById(int userId);
     Task<(bool Success, string Message)> UpdateBalance(int userId, decimal newBalance);
     string GenerateJwtToken(int userId, string username);
+    Task<(bool Success, string Token, UserResponse? User, string ErrorCode, string Message)> AuthenticateWithToken(TokenRequest request);
 }

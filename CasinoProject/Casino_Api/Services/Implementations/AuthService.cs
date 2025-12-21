@@ -140,4 +140,83 @@ public class AuthService : IAuthService
         var apiKey = await _unitOfWork.TenantApiKeys.GetActiveApiKeyAsync();
         return apiKey?.ApiKey ?? "default_tenant_api_key_12345";
     }
+
+    public async Task<(bool Success, string Token, UserResponse? User, string ErrorCode, string Message)> AuthenticateWithToken(TokenRequest request)
+    {
+        // Validate grant_type
+        if (request.GrantType?.ToLower() != "password")
+        {
+            return (false, string.Empty, null, "unsupported_grant_type", "Only 'password' grant type is supported");
+        }
+
+        // Validate WebAPI Key
+        var isValidApiKey = await _unitOfWork.TenantApiKeys.ValidateApiKeyAsync(request.WebApiKey);
+        if (!isValidApiKey)
+        {
+            return (false, string.Empty, null, "invalid_client", "Invalid webapi_key");
+        }
+
+        // Authenticate user by username or email
+        User? user = null;
+        
+        // Try to find by email first
+        if (request.Username.Contains("@"))
+        {
+            user = await _unitOfWork.Users.GetByEmailAsync(request.Username);
+        }
+        else
+        {
+            // Try by username
+            user = await _unitOfWork.Users.GetByUsernameAsync(request.Username);
+        }
+
+        if (user == null)
+        {
+            return (false, string.Empty, null, "invalid_grant", "Invalid username or password");
+        }
+
+        // Verify password
+        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        {
+            return (false, string.Empty, null, "invalid_grant", "Invalid username or password");
+        }
+
+        // Generate token with 30 minutes expiration
+        var token = GenerateJwtTokenWithExpiry(user.Id, user.Username, 30);
+
+        var userResponse = new UserResponse
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Email = user.Email,
+            Balance = user.Balance,
+            CreatedAt = user.CreatedAt
+        };
+
+        return (true, token, userResponse, string.Empty, "Authentication successful");
+    }
+
+    private string GenerateJwtTokenWithExpiry(int userId, string username, int expiryMinutes)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? ""));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+            new Claim(ClaimTypes.Name, username),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: _config["Jwt:Issuer"],
+            audience: _config["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
 }

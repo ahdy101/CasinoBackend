@@ -1,8 +1,8 @@
 using Casino_Api.Data;
-using Casino_Api.Factories.Interfaces;
+using Casino_Api.Repositories.Factories;
 using Microsoft.EntityFrameworkCore;
 
-namespace Casino_Api.Factories.Implementations;
+namespace Casino_Api.Repositories.Factories;
 
 public class DbContextFactory : IDbContextFactory
 {

@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace Casino_Api.Infrastructure;
+namespace Casino_Api.Services;
 
 public interface IRandomNumberGenerator
 {

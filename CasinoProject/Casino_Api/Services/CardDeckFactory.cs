@@ -1,6 +1,6 @@
 using Casino_Api.Models;
 
-namespace Casino_Api.Infrastructure;
+namespace Casino_Api.Services;
 
 public interface ICardDeckFactory
 {
