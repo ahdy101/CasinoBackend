@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Casino_Api.DTOs.Requests;
 
@@ -37,18 +38,23 @@ public class UpdateBalanceRequest
 
 /// <summary>
 /// OAuth2-style token request with grant_type parameter
+/// Supports both camelCase and PascalCase JSON
 /// </summary>
 public class TokenRequest
 {
     [Required(ErrorMessage = "grant_type is required")]
+  [JsonPropertyName("grant_type")]
     public string GrantType { get; set; } = string.Empty;
     
     [Required(ErrorMessage = "username is required")]
+    [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
-    
+ 
     [Required(ErrorMessage = "password is required")]
-    public string Password { get; set; } = string.Empty;
+    [JsonPropertyName("password")]
+  public string Password { get; set; } = string.Empty;
     
     [Required(ErrorMessage = "webapi_key is required")]
+    [JsonPropertyName("webapi_key")]
     public string WebApiKey { get; set; } = string.Empty;
 }

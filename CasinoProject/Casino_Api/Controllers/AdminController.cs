@@ -1,5 +1,6 @@
 using Casino_Api.Data;
 using Casino_Api.DTOs.Responses;
+using Casino_Api.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,51 +10,90 @@ namespace Casino_Api.Controllers;
 [Route("api/[controller]")]
 public class AdminController : ControllerBase
 {
-    private readonly AppDbContext _context;
+  private readonly AppDbContext _context;
     private readonly ILogger<AdminController> _logger;
+    private readonly TokenValidator _tokenValidator;
 
-    public AdminController(AppDbContext context, ILogger<AdminController> logger)
-    {
+    public AdminController(AppDbContext context, ILogger<AdminController> logger, TokenValidator tokenValidator)
+{
         _context = context;
-        _logger = logger;
+  _logger = logger;
+  _tokenValidator = tokenValidator;
     }
 
-    [HttpGet("dashboard")]
-    public async Task<ActionResult<AdminDashboardResponse>> GetDashboardData()
+[HttpGet("dashboard")]
+    [ProducesResponseType(typeof(AdminDashboardResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<AdminDashboardResponse>> GetDashboardData(
+     [FromHeader(Name = "Authorization")] string? authorization)
     {
         try
         {
-            // TODO: Add admin authentication check
-            // For now, this is open - should add [Authorize(Roles = "Admin")] attribute
+          // Fallback to Request.Headers if parameter is empty
+  if (string.IsNullOrEmpty(authorization))
+     {
+     authorization = Request.Headers["Authorization"].FirstOrDefault();
+ }
+
+      if (string.IsNullOrEmpty(authorization))
+    return Unauthorized(new { message = "Authorization header is required. Format: Bearer {token}" });
+
+ // Validate token and require Admin or SuperAdmin role
+var validation = _tokenValidator.ValidateTokenWithRole(authorization, "Admin", "SuperAdmin");
+            if (!validation.IsValid)
+   return validation.Error.Contains("role") || validation.Error.Contains("Access denied")
+  ? StatusCode(403, new { message = validation.Error })
+  : Unauthorized(new { message = validation.Error });
 
             var dashboard = new AdminDashboardResponse
-            {
-                UserStats = await GetUserStatisticsData(),
-                TransactionStats = await GetTransactionStatisticsData(),
-                GameStats = await GetGameStatisticsData()
-            };
+ {
+     UserStats = await GetUserStatisticsData(),
+        TransactionStats = await GetTransactionStatisticsData(),
+    GameStats = await GetGameStatisticsData()
+ };
 
-            return Ok(dashboard);
+   return Ok(dashboard);
         }
         catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching admin dashboard data");
-            return StatusCode(500, new { message = "Error fetching dashboard data" });
+   {
+         _logger.LogError(ex, "Error fetching admin dashboard data");
+      return StatusCode(500, new { message = "Error fetching dashboard data" });
         }
     }
 
     [HttpGet("users")]
-    public async Task<ActionResult<UserStatistics>> GetUserStatistics()
+    [ProducesResponseType(typeof(UserStatistics), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+ [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<UserStatistics>> GetUserStatistics(
+        [FromHeader(Name = "Authorization")] string? authorization)
     {
-        try
+ try
         {
-            var stats = await GetUserStatisticsData();
+      // Fallback to Request.Headers if parameter is empty
+if (string.IsNullOrEmpty(authorization))
+   {
+     authorization = Request.Headers["Authorization"].FirstOrDefault();
+    }
+
+      if (string.IsNullOrEmpty(authorization))
+    return Unauthorized(new { message = "Authorization header is required. Format: Bearer {token}" });
+
+  // Validate token and require Admin or SuperAdmin role
+    var validation = _tokenValidator.ValidateTokenWithRole(authorization, "Admin", "SuperAdmin");
+    if (!validation.IsValid)
+ return validation.Error.Contains("role") || validation.Error.Contains("Access denied")
+      ? StatusCode(403, new { message = validation.Error })
+  : Unauthorized(new { message = validation.Error });
+
+      var stats = await GetUserStatisticsData();
             return Ok(stats);
         }
-        catch (Exception ex)
-        {
+    catch (Exception ex)
+{
             _logger.LogError(ex, "Error fetching user statistics");
-            return StatusCode(500, new { message = "Error fetching user statistics" });
+ return StatusCode(500, new { message = "Error fetching user statistics" });
         }
     }
 
@@ -118,18 +158,38 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("transactions")]
-    public async Task<ActionResult<TransactionStatistics>> GetTransactionStatistics()
+    [ProducesResponseType(typeof(TransactionStatistics), StatusCodes.Status200OK)]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<TransactionStatistics>> GetTransactionStatistics(
+        [FromHeader(Name = "Authorization")] string? authorization)
     {
         try
         {
-            var stats = await GetTransactionStatisticsData();
+            // Fallback to Request.Headers if parameter is empty
+      if (string.IsNullOrEmpty(authorization))
+  {
+    authorization = Request.Headers["Authorization"].FirstOrDefault();
+    }
+
+   if (string.IsNullOrEmpty(authorization))
+  return Unauthorized(new { message = "Authorization header is required. Format: Bearer {token}" });
+
+         // Validate token and require Admin or SuperAdmin role
+       var validation = _tokenValidator.ValidateTokenWithRole(authorization, "Admin", "SuperAdmin");
+    if (!validation.IsValid)
+      return validation.Error.Contains("role") || validation.Error.Contains("Access denied")
+   ? StatusCode(403, new { message = validation.Error })
+  : Unauthorized(new { message = validation.Error });
+
+     var stats = await GetTransactionStatisticsData();
             return Ok(stats);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching transaction statistics");
-            return StatusCode(500, new { message = "Error fetching transaction statistics" });
-        }
+     }
+  catch (Exception ex)
+      {
+  _logger.LogError(ex, "Error fetching transaction statistics");
+  return StatusCode(500, new { message = "Error fetching transaction statistics" });
+      }
     }
 
     private async Task<TransactionStatistics> GetTransactionStatisticsData()
@@ -188,17 +248,37 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("games")]
-    public async Task<ActionResult<GameStatistics>> GetGameStatistics()
+    [ProducesResponseType(typeof(GameStatistics), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+ public async Task<ActionResult<GameStatistics>> GetGameStatistics(
+    [FromHeader(Name = "Authorization")] string? authorization)
     {
-        try
-        {
+      try
+   {
+      // Fallback to Request.Headers if parameter is empty
+    if (string.IsNullOrEmpty(authorization))
+{
+    authorization = Request.Headers["Authorization"].FirstOrDefault();
+   }
+
+        if (string.IsNullOrEmpty(authorization))
+    return Unauthorized(new { message = "Authorization header is required. Format: Bearer {token}" });
+
+         // Validate token and require Admin or SuperAdmin role
+    var validation = _tokenValidator.ValidateTokenWithRole(authorization, "Admin", "SuperAdmin");
+   if (!validation.IsValid)
+       return validation.Error.Contains("role") || validation.Error.Contains("Access denied")
+     ? StatusCode(403, new { message = validation.Error })
+  : Unauthorized(new { message = validation.Error });
+
             var stats = await GetGameStatisticsData();
-            return Ok(stats);
-        }
+      return Ok(stats);
+     }
         catch (Exception ex)
-        {
+   {
             _logger.LogError(ex, "Error fetching game statistics");
-            return StatusCode(500, new { message = "Error fetching game statistics" });
+   return StatusCode(500, new { message = "Error fetching game statistics" });
         }
     }
 

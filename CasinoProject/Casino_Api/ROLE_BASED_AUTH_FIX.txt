@@ -1,0 +1,259 @@
+==============================================
+COMPLETE FIX FOR API ERRORS + ROLE-BASED AUTH
+==============================================
+
+## ISSUE 1: Double "Bearer" in Authorization Header
+? Wrong: Authorization: Bearer Bearer eyJ...
+? Correct: Authorization: Bearer eyJ...
+
+## ISSUE 2: Missing API Key
+The WalletController requires API key but you didn't provide it
+
+## ISSUE 3: No Role-Based Separation
+Admin and regular users can access the same endpoints
+
+==============================================
+? SOLUTIONS IMPLEMENTED:
+==============================================
+
+### 1. Added Role Property to User Model
+- Users now have: "User", "Admin", or "SuperAdmin" roles
+- Admin user seeded with "Admin" role
+
+### 2. Updated JWT Token to Include Role
+- Role claim added to JWT token
+- Can now use [Authorize(Roles = "Admin")] in controllers
+
+### 3. Updated Controllers with Role-Based Auth
+- WalletController: Regular users only
+- AdminController: Admins only
+- BlackjackController: Regular users only
+
+### 4. Removed API Key Requirement from Some Endpoints
+- Token endpoint: No API key needed
+- Authenticated endpoints: Use JWT only
+
+==============================================
+?? DATABASE UPDATE REQUIRED
+==============================================
+
+**STEP 1: Drop and Recreate Database**
+
+Run in MySQL Workbench:
+```sql
+DROP DATABASE IF EXISTS casino_db;
+CREATE DATABASE casino_db;
+```
+
+**STEP 2: Restart API**
+```powershell
+dotnet run
+```
+
+This will create the Users table with the new Role column!
+
+==============================================
+? NEW SEEDED DATA (AUTO-CREATED):
+==============================================
+
+## Admin User:
+- ID: 999
+- Username: admin
+- Email: admin@casinoapi.com
+- Password: admin123
+- Balance: 999999.00
+- Role: Admin ? NEW!
+
+## API Key:
+- default_tenant_api_key_12345
+
+==============================================
+?? HOW TO GET A TOKEN (Updated):
+==============================================
+
+**Request:**
+POST http://localhost:5001/api/auth/token
+Content-Type: application/json
+
+```json
+{
+  "grant_type": "password",
+  "username": "admin",
+  "password": "admin123",
+  "webapi_key": "default_tenant_api_key_12345"
+}
+```
+
+**Response includes role:**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "Bearer",
+  "expires_in": 1800,
+  "user": {
+  "id": 999,
+    "username": "admin",
+    "email": "admin@casinoapi.com",
+    "balance": 999999.00,
+    "role": "Admin"
+  }
+}
+```
+
+==============================================
+? CORRECT WAY TO CALL WALLET ENDPOINT:
+==============================================
+
+**curl Command (Fixed):**
+```bash
+curl -X 'POST' \
+  'http://localhost:5001/api/Wallet/add-funds?apiKey=default_tenant_api_key_12345' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "amount": 100000
+}'
+```
+
+**Key Changes:**
+1. ? Single "Bearer" (not double)
+2. ? API key in query string: ?apiKey=...
+3. ? Proper token after Bearer
+
+==============================================
+?? SWAGGER UI TESTING:
+==============================================
+
+**STEP 1: Get Token**
+1. Go to POST /api/auth/token
+2. Use the JSON above
+3. Copy the access_token
+
+**STEP 2: Authorize**
+1. Click "Authorize" button (top right)
+2. In "Bearer" field, paste ONLY the token (no "Bearer" word)
+3. In "ApiKey" field, paste: default_tenant_api_key_12345
+4. Click "Authorize"
+
+**STEP 3: Test Endpoints**
+Now you can call any endpoint!
+
+==============================================
+?? ROLE-BASED ACCESS CONTROL:
+==============================================
+
+### Regular User Endpoints (Role: "User"):
+- ? POST /api/Wallet/add-funds
+- ? POST /api/Wallet/cash-out
+- ? GET /api/Wallet/balance
+- ? POST /api/Blackjack/deal
+- ? POST /api/Blackjack/hit
+- ? POST /api/Blackjack/stand
+
+### Admin Only Endpoints (Role: "Admin"):
+- ? GET /api/Admin/dashboard
+- ? GET /api/Admin/users
+- ? GET /api/Admin/transactions
+- ? GET /api/Admin/games
+
+### Public Endpoints (No Auth):
+- ? POST /api/auth/token
+- ? POST /api/auth/register
+- ? POST /api/auth/login
+
+==============================================
+?? CREATE REGULAR USER FOR TESTING:
+==============================================
+
+**Register a normal user:**
+POST http://localhost:5001/api/auth/register?apiKey=default_tenant_api_key_12345
+
+```json
+{
+  "username": "testuser",
+  "email": "test@example.com",
+  "password": "Test@123"
+}
+```
+
+This user will have Role: "User" (not Admin)
+
+**Get token for regular user:**
+POST http://localhost:5001/api/auth/token
+
+```json
+{
+  "grant_type": "password",
+  "username": "test@example.com",
+  "password": "Test@123",
+  "webapi_key": "default_tenant_api_key_12345"
+}
+```
+
+**Regular user CANNOT access:**
+- ? /api/Admin/* endpoints (403 Forbidden)
+
+**Regular user CAN access:**
+- ? /api/Wallet/* endpoints
+- ? /api/Blackjack/* endpoints
+
+==============================================
+?? SECURITY SUMMARY:
+==============================================
+
+1. ? JWT tokens now include role claims
+2. ? Controllers use [Authorize(Roles = "Admin")] where needed
+3. ? Admin endpoints protected from regular users
+4. ? User endpoints available to authenticated users
+5. ? API key validation for multi-tenancy
+6. ? Passwords hashed with BCrypt
+7. ? Tokens expire in 30 minutes
+
+==============================================
+?? IMPORTANT NOTES:
+==============================================
+
+1. **Drop database first** to add Role column
+2. **Single "Bearer" in Authorization** header
+3. **API key goes in query string** for endpoints that require it
+4. **Admin user has Role="Admin"**
+5. **Regular users have Role="User"**
+6. **Test with both user types** to verify access control
+
+==============================================
+?? QUICK START:
+==============================================
+
+```sql
+-- In MySQL:
+DROP DATABASE IF EXISTS casino_db;
+CREATE DATABASE casino_db;
+```
+
+```powershell
+# In PowerShell:
+dotnet run
+```
+
+```bash
+# Get admin token:
+curl -X POST http://localhost:5001/api/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "grant_type": "password",
+    "username": "admin",
+    "password": "admin123",
+    "webapi_key": "default_tenant_api_key_12345"
+  }'
+```
+
+```bash
+# Test wallet endpoint:
+curl -X POST "http://localhost:5001/api/Wallet/add-funds?apiKey=default_tenant_api_key_12345" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 10000}'
+```
+
+DONE! ?

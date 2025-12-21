@@ -31,7 +31,7 @@ public class AuthService : IAuthService
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             return (false, string.Empty, string.Empty, null, "Invalid email or password");
 
-        var token = GenerateJwtToken(user.Id, user.Username);
+        var token = GenerateJwtTokenWithRole(user.Id, user.Username, user.Role);
         var apiKey = await GetDefaultApiKey();
 
         var userResponse = new UserResponse
@@ -181,41 +181,66 @@ public class AuthService : IAuthService
             return (false, string.Empty, null, "invalid_grant", "Invalid username or password");
         }
 
-        // Generate token with 30 minutes expiration
-        var token = GenerateJwtTokenWithExpiry(user.Id, user.Username, 30);
+        // Generate token with 30 minutes expiration and role
+        var token = GenerateJwtTokenWithRoleAndExpiry(user.Id, user.Username, user.Role, 30);
 
-        var userResponse = new UserResponse
+      var userResponse = new UserResponse
         {
             Id = user.Id,
-            Username = user.Username,
-            Email = user.Email,
-            Balance = user.Balance,
-            CreatedAt = user.CreatedAt
+   Username = user.Username,
+   Email = user.Email,
+          Balance = user.Balance,
+  CreatedAt = user.CreatedAt
         };
 
-        return (true, token, userResponse, string.Empty, "Authentication successful");
+  return (true, token, userResponse, string.Empty, "Authentication successful");
     }
 
-    private string GenerateJwtTokenWithExpiry(int userId, string username, int expiryMinutes)
+    private string GenerateJwtTokenWithRole(int userId, string username, string role)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? ""));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-            new Claim(ClaimTypes.Name, username),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+   {
+  new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+       new Claim(ClaimTypes.Name, username),
+       new Claim(ClaimTypes.Role, role),
+    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
         var token = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
-            signingCredentials: credentials
+         audience: _config["Jwt:Audience"],
+          claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(double.Parse(_config["Jwt:ExpireMinutes"] ?? "120")),
+    signingCredentials: credentials
         );
+
+  return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private string GenerateJwtTokenWithRoleAndExpiry(int userId, string username, string role, int expiryMinutes)
+    {
+      var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? ""));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+     new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+       new Claim(ClaimTypes.Name, username),
+        new Claim(ClaimTypes.Role, role),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+      new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: _config["Jwt:Issuer"],
+   audience: _config["Jwt:Audience"],
+            claims: claims,
+         expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
+   signingCredentials: credentials
+ );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

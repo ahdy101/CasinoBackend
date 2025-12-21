@@ -60,7 +60,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddScoped<IBlackjackEngine, BlackjackEngine>();
 
-// Register Security Filters
+// Register Security Services
+builder.Services.AddScoped<TokenValidator>();
 builder.Services.AddScoped<RequireApiKeyAttribute>();
 
 // Add Controllers with JSON options
@@ -69,6 +70,7 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true; // Allow case-insensitive property matching
     });
 
 // Add CORS for React frontend
@@ -83,51 +85,18 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add Swagger/OpenAPI
+// Add Swagger/OpenAPI - Simplified (no security schemes)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "The Silver Slayed Casino API",
-        Version = "v1",
-        Description = "Luxury online casino API with JWT authentication and multi-tenant support"
+    Version = "v1",
+     Description = "Luxury online casino API with bearer token authentication"
     });
 
-    // Add JWT Authentication to Swagger
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT"
-    });
-
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-
-    // Add API Key parameter
-    c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
-    {
-        Description = "API Key for tenant validation. Example: ?apiKey={key}",
-        Name = "apiKey",
-        In = ParameterLocation.Query,
-        Type = SecuritySchemeType.ApiKey
-    });
+    // No security definitions - bearer token is a regular parameter
 });
 
 var app = builder.Build();

@@ -137,7 +137,7 @@ public class AppDbContext : DbContext
 
     private void SeedAdminUsers(ModelBuilder modelBuilder)
     {
-        // Seed an admin user in the Users table for login
+        // Seed an admin user in the Users table for login with Admin role
         var adminUserHash = BCrypt.Net.BCrypt.HashPassword("admin123");
         modelBuilder.Entity<User>().HasData(new User
         {
@@ -146,6 +146,7 @@ public class AppDbContext : DbContext
             Email = "admin@casinoapi.com",
             PasswordHash = adminUserHash,
             Balance = 999999m,
+            Role = "Admin", // Set as Admin
             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
     }

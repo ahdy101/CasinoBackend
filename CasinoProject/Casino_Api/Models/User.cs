@@ -21,6 +21,10 @@ public class User
     [Column(TypeName = "decimal(18,2)")]
     public decimal Balance { get; set; } = 0m;
     
+    [Required]
+    [MaxLength(20)]
+    public string Role { get; set; } = "User"; // User, Admin, SuperAdmin
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     public int? TenantId { get; set; }

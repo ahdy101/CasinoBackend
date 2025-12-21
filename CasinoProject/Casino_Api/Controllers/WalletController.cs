@@ -1,80 +1,124 @@
-using Casino_Api.DTOs.Requests;
 using Casino_Api.DTOs.Responses;
 using Casino_Api.Security;
 using Casino_Api.Services.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Casino_Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
-[ServiceFilter(typeof(RequireApiKeyAttribute))]
 public class WalletController : ControllerBase
 {
     private readonly IWalletService _walletService;
+    private readonly TokenValidator _tokenValidator;
 
-    public WalletController(IWalletService walletService)
+    public WalletController(
+        IWalletService walletService,
+    TokenValidator tokenValidator)
     {
         _walletService = walletService;
+      _tokenValidator = tokenValidator;
     }
 
     /// <summary>
-    /// Get user balance
+    /// Get user balance (Requires: Bearer token only)
     /// </summary>
     [HttpGet("balance")]
-    [ProducesResponseType(typeof(decimal), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetBalance()
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetBalance(
+        [FromHeader(Name = "Authorization")] string? authorization)
     {
-        var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
-        var result = await _walletService.GetBalance(userId);
+        // Fallback to Request.Headers if parameter is empty
+        if (string.IsNullOrEmpty(authorization))
+  {
+      authorization = Request.Headers["Authorization"].FirstOrDefault();
+   }
+
+        if (string.IsNullOrEmpty(authorization))
+     return Unauthorized(new ErrorResponse("Authorization header is required. Format: Bearer {token}"));
+
+  var validation = _tokenValidator.ValidateToken(authorization);
+    if (!validation.IsValid)
+   return Unauthorized(new ErrorResponse(validation.Error));
+
+     var result = await _walletService.GetBalance(validation.UserId);
 
         if (!result.Success)
-            return NotFound(new ErrorResponse("User not found"));
+ return NotFound(new ErrorResponse("User not found"));
 
-        return Ok(new { balance = result.Balance });
+    return Ok(new { balance = result.Balance });
     }
 
     /// <summary>
-    /// Add funds to wallet
+    /// Add funds to wallet (Requires: Bearer token only)
     /// </summary>
     [HttpPost("add-funds")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> AddFunds([FromBody] AddFundsRequest request)
+    public async Task<IActionResult> AddFunds(
+        [FromHeader(Name = "Authorization")] string? authorization,
+        [FromQuery] decimal amount)
     {
-        var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
-        var result = await _walletService.AddFunds(userId, request.Amount);
+ // Fallback to Request.Headers if parameter is empty
+        if (string.IsNullOrEmpty(authorization))
+  {
+   authorization = Request.Headers["Authorization"].FirstOrDefault();
+        }
+
+  if (string.IsNullOrEmpty(authorization))
+         return Unauthorized(new ErrorResponse("Authorization header is required. Format: Bearer {token}"));
+
+        var validation = _tokenValidator.ValidateToken(authorization);
+ if (!validation.IsValid)
+     return Unauthorized(new ErrorResponse(validation.Error));
+
+        var result = await _walletService.AddFunds(validation.UserId, amount);
 
         if (!result.Success)
-            return BadRequest(new ErrorResponse(result.Message));
+   return BadRequest(new ErrorResponse(result.Message));
 
-        return Ok(new { 
-            success = true,
-            newBalance = result.NewBalance,
-            message = result.Message
-        });
+   return Ok(new
+        {
+      success = true,
+          newBalance = result.NewBalance,
+  message = result.Message
+    });
     }
 
     /// <summary>
-    /// Cash out from wallet
+    /// Cash out from wallet (Requires: Bearer token only)
     /// </summary>
     [HttpPost("cash-out")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CashOut([FromBody] CashOutRequest request)
+    public async Task<IActionResult> CashOut(
+        [FromHeader(Name = "Authorization")] string? authorization,
+        [FromQuery] decimal amount)
     {
-        var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
-        var result = await _walletService.CashOut(userId, request.Amount);
+        // Fallback to Request.Headers if parameter is empty
+    if (string.IsNullOrEmpty(authorization))
+        {
+            authorization = Request.Headers["Authorization"].FirstOrDefault();
+        }
 
-        if (!result.Success)
-            return BadRequest(new ErrorResponse(result.Message));
+  if (string.IsNullOrEmpty(authorization))
+            return Unauthorized(new ErrorResponse("Authorization header is required. Format: Bearer {token}"));
 
-        return Ok(new { 
-            success = true,
-            newBalance = result.NewBalance,
-            message = result.Message
+        var validation = _tokenValidator.ValidateToken(authorization);
+        if (!validation.IsValid)
+ return Unauthorized(new ErrorResponse(validation.Error));
+
+var result = await _walletService.CashOut(validation.UserId, amount);
+
+    if (!result.Success)
+    return BadRequest(new ErrorResponse(result.Message));
+
+        return Ok(new
+        {
+  success = true,
+       newBalance = result.NewBalance,
+ message = result.Message
         });
     }
 }
