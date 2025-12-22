@@ -24,9 +24,9 @@ namespace Casino.Backend.Services
             _logger = logger;
         }
 
-        public async Task<User> RegisterAsync(string username, string password, decimal initialBalance = 1000m)
+        public async Task<User> RegisterAsync(string username, string email, string password)
         {
-            _logger.LogInformation("RegisterAsync - Username: {Username}", username);
+            _logger.LogInformation("RegisterAsync - Username: {Username}, Email: {Email}", username, email);
 
             if (await _userRepository.UsernameExistsAsync(username))
             {
@@ -38,8 +38,10 @@ namespace Casino.Backend.Services
             var user = new User
             {
                 Username = username,
+                Email = email,
                 PasswordHash = hash,
-                Balance = initialBalance,
+                Balance = 10000m,
+                Role = "Player",
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -104,6 +106,12 @@ namespace Casino.Backend.Services
 
             _logger.LogInformation("ChangePasswordAsync successful - UserId: {UserId}", userId);
             return true;
+        }
+
+        public async Task<User?> GetUserByIdAsync(int userId)
+        {
+            _logger.LogInformation("GetUserByIdAsync - UserId: {UserId}", userId);
+            return await _userRepository.GetByIdAsync(userId);
         }
     }
 }

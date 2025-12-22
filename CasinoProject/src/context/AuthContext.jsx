@@ -136,6 +136,8 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, email, password, initialBalance = 10000) => {
     try {
+      console.log('Sending register request:', { username, email, password, initialBalance });
+      
       const response = await axios.post(`${API_URL}/register`, {
         username: username,
         email: email,
@@ -143,8 +145,20 @@ export const AuthProvider = ({ children }) => {
         initialBalance: initialBalance
       });
 
-      // Handle response with token and user
+      console.log('Register response:', response.data);
+
+      // Handle response - { token, user: {...} }
       const { token, user: userData } = response.data;
+      
+      if (!token) {
+        console.error('Token is missing from response:', response.data);
+        return { success: false, message: 'Invalid response from server - token missing' };
+      }
+      
+      if (!userData || !userData.id) {
+        console.error('User data is missing from response:', response.data);
+        return { success: false, message: 'Invalid response from server - user data missing' };
+      }
       
       const user = {
         id: userData.id,
@@ -163,14 +177,28 @@ export const AuthProvider = ({ children }) => {
 
       setUser(user);
       setBalance(userData.balance);
+      setIsAdmin(false); // New users are not admins
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('token', token);
       localStorage.setItem('balance', userData.balance.toString());
+      localStorage.setItem('isAdmin', 'false');
       
       return { success: true, message: `Welcome! You received ${userData.balance.toLocaleString()} chips!` };
     } catch (error) {
       console.error('Registration error:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.Message || 'Registration failed';
+      console.error('Error response:', error.response?.data);
+      console.error('Validation errors:', error.response?.data?.errors);
+      
+      // Handle validation errors
+      if (error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors;
+        const errorMessages = Object.entries(validationErrors)
+          .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+          .join('; ');
+        return { success: false, message: errorMessages };
+      }
+      
+      const errorMessage = error.response?.data?.message || error.response?.data?.Message || error.response?.data?.title || 'Registration failed';
       return { success: false, message: errorMessage };
     }
   };

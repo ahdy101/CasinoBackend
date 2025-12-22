@@ -114,8 +114,8 @@ builder.Services.AddSwaggerGen(options =>
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
      Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
       Scheme = "bearer",
-        BearerFormat = "JWT"
-    });
+      BearerFormat = "JWT"
+});
 
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
@@ -126,9 +126,9 @@ builder.Services.AddSwaggerGen(options =>
         {
            Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
  Id = "Bearer"
-      }
+    }
          },
-            Array.Empty<string>()
+   Array.Empty<string>()
         }
     });
 
@@ -136,7 +136,10 @@ builder.Services.AddSwaggerGen(options =>
     options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
     
     // Support nullable reference types
-    options.SupportNonNullableReferenceTypes();
+  options.SupportNonNullableReferenceTypes();
+    
+    // Use data annotations for descriptions
+    options.UseInlineDefinitionsForEnums();
 });
 
 var app = builder.Build();

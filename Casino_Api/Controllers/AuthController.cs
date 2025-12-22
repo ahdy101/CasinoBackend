@@ -42,24 +42,32 @@ namespace Casino.Backend.Controllers
 
       try
  {
-     var user = await _authService.RegisterAsync(
+  var user = await _authService.RegisterAsync(
     request.Username,
-   request.Password,
-  request.InitialBalance ?? 1000m);
+       request.Email,
+   request.Password);
 
-     var response = new UserResponse
+      // Generate JWT token for automatic login
+            var token = await _authService.LoginAsync(request.Username, request.Password);
+
+var response = new UserResponse
    {
       Id = user.Id,
-            Username = user.Username,
-          Balance = user.Balance,
-          CreatedAt = user.CreatedAt
-    };
+    Username = user.Username,
+   Email = user.Email,
+Balance = user.Balance,
+        CreatedAt = user.CreatedAt
+ };
 
-    _logger.LogInformation("User registered successfully - UserId: {UserId}, Username: {Username}",
-    user.Id, user.Username);
+    _logger.LogInformation("User registered successfully - UserId: {UserId}, Username: {Username}, Email: {Email}",
+    user.Id, user.Username, user.Email);
 
-          return CreatedAtAction(nameof(Register), new { id = user.Id }, response);
-            }
+            return CreatedAtAction(nameof(Register), new { id = user.Id }, new
+      {
+     token = token,
+       user = response
+       });
+        }
  catch (Exception ex)
     {
           _logger.LogWarning(ex, "Registration failed for username: {Username}", request.Username);
@@ -107,10 +115,54 @@ namespace Casino.Backend.Controllers
          return Unauthorized(new ErrorResponse
  {
     Message = "Invalid credentials",
-          Errors = new List<string> { "Username or password is incorrect" }
-        });
-       }
+       Errors = new List<string> { "Username or password is incorrect" }
+   });
+   }
     }
+
+        /// <summary>
+        /// Get current authenticated user information
+   /// </summary>
+        [HttpGet("whoami")]
+        [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> WhoAmI()
+ {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+   
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+       {
+           return Unauthorized(new ErrorResponse
+      {
+         Message = "Invalid or missing authentication token",
+              Errors = new List<string> { "Please login to access this endpoint" }
+   });
+         }
+
+        var user = await _authService.GetUserByIdAsync(userId);
+    
+            if (user == null)
+            {
+  return NotFound(new ErrorResponse
+         {
+      Message = "User not found",
+       Errors = new List<string> { "User account may have been deleted" }
+    });
+   }
+
+            var response = new UserResponse
+            {
+  Id = user.Id,
+     Username = user.Username,
+  Email = user.Email,
+     Balance = user.Balance,
+        CreatedAt = user.CreatedAt
+       };
+
+  _logger.LogInformation("WhoAmI called - UserId: {UserId}", userId);
+
+  return Ok(response);
+        }
     }
 
     /// <summary>

@@ -20,9 +20,9 @@ _connectionFactory = connectionFactory;
         public async Task<TenantApiKey?> GetByIdAsync(int id)
   {
       const string sql = @"
- SELECT Id, TenantName, ApiKey, IsActive, CreatedAt
-        FROM TenantApiKeys
-      WHERE Id = @Id";
+ SELECT Id, TenantName, ApiKey, IsActive, TenantId, CreatedAt
+     FROM TenantApiKeys
+   WHERE Id = @Id";
 
     using var connection = _connectionFactory.CreateConnection();
       return await connection.QueryFirstOrDefaultAsync<TenantApiKey>(sql, new { Id = id });
@@ -31,7 +31,7 @@ _connectionFactory = connectionFactory;
  public async Task<IEnumerable<TenantApiKey>> GetAllAsync()
         {
     const string sql = @"
-SELECT Id, TenantName, ApiKey, IsActive, CreatedAt
+SELECT Id, TenantName, ApiKey, IsActive, TenantId, CreatedAt
     FROM TenantApiKeys
  ORDER BY CreatedAt DESC";
 
@@ -42,8 +42,8 @@ SELECT Id, TenantName, ApiKey, IsActive, CreatedAt
         public async Task<int> AddAsync(TenantApiKey entity)
     {
    const string sql = @"
-    INSERT INTO TenantApiKeys (TenantName, ApiKey, IsActive, CreatedAt)
-  VALUES (@TenantName, @ApiKey, @IsActive, @CreatedAt);
+ INSERT INTO TenantApiKeys (TenantName, ApiKey, IsActive, TenantId, CreatedAt)
+  VALUES (@TenantName, @ApiKey, @IsActive, @TenantId, @CreatedAt);
     SELECT LAST_INSERT_ID();";
 
 using var connection = _connectionFactory.CreateConnection();
@@ -58,7 +58,8 @@ using var connection = _connectionFactory.CreateConnection();
    UPDATE TenantApiKeys
      SET TenantName = @TenantName,
    ApiKey = @ApiKey,
-       IsActive = @IsActive
+       IsActive = @IsActive,
+       TenantId = @TenantId
    WHERE Id = @Id";
 
     using var connection = _connectionFactory.CreateConnection();
@@ -78,7 +79,7 @@ return rowsAffected > 0;
      public async Task<TenantApiKey?> GetByApiKeyAsync(string apiKey)
    {
 const string sql = @"
- SELECT Id, TenantName, ApiKey, IsActive, CreatedAt
+ SELECT Id, TenantName, ApiKey, IsActive, TenantId, CreatedAt
   FROM TenantApiKeys
     WHERE ApiKey = @ApiKey
  LIMIT 1";

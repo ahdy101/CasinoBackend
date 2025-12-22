@@ -101,8 +101,10 @@ private readonly IUserRepository _userRepository;
  var user = new User
  {
  Username = request.Username,
+   Email = request.Email,
  PasswordHash = passwordHash,
- Balance = request.InitialBalance ?? 1000m,
+ Balance = 10000m,
+            Role = "Player",
  CreatedAt = DateTime.UtcNow
  };
 

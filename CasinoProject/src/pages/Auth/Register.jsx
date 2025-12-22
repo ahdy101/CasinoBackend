@@ -18,6 +18,7 @@ const Register = () => {
   });
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -46,6 +47,16 @@ const Register = () => {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
+    } else {
+      // Check password strength requirements
+      const hasUpperCase = /[A-Z]/.test(formData.password);
+      const hasLowerCase = /[a-z]/.test(formData.password);
+      const hasNumber = /[0-9]/.test(formData.password);
+      const hasSpecialChar = /[@$!%*?&]/.test(formData.password);
+      
+      if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+        newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)';
+      }
     }
     
     if (formData.password !== formData.confirmPassword) {
@@ -58,20 +69,36 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('Form submitted with data:', formData);
+    
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
+      console.log('Validation errors:', newErrors);
       setErrors(newErrors);
       return;
     }
 
-    const result = await register(formData.username, formData.email, formData.password);
-    if (result.success) {
-      setSuccessMessage(result.message);
-      setTimeout(() => {
-        navigate('/lobby');
-      }, 2000);
-    } else {
-      setErrors({ general: result.message });
+    setLoading(true);
+    setErrors({});
+
+    try {
+      console.log('Calling register API...');
+      const result = await register(formData.username, formData.email, formData.password);
+      console.log('Register result:', result);
+      
+      if (result.success) {
+        setSuccessMessage(result.message);
+        setTimeout(() => {
+          navigate('/lobby');
+        }, 2000);
+      } else {
+        setErrors({ general: result.message });
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setErrors({ general: 'Network error. Please check if the API server is running.' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -81,10 +108,23 @@ const Register = () => {
         <div className="auth-header">
           <img src={LOGO} alt="The Silver Slayed" className="auth-logo" />
           <h1 className="auth-title">Join The Silver Slayed</h1>
-          <p className="auth-subtitle">Create your account and get $15,000 welcome bonus!</p>
+          <p className="auth-subtitle">Create your account and get $10,000 welcome bonus!</p>
         </div>
 
         <Card className="auth-card">
+          {errors.general && (
+            <div className="error-banner" style={{ 
+              backgroundColor: '#fee', 
+              color: '#c33', 
+              padding: '10px', 
+              borderRadius: '4px', 
+              marginBottom: '15px',
+              border: '1px solid #fcc'
+            }}>
+              {errors.general}
+            </div>
+          )}
+          
           {successMessage && (
             <div className="success-banner">
               {successMessage}
@@ -124,6 +164,14 @@ const Register = () => {
               error={errors.password}
               required
             />
+            <p style={{ 
+              fontSize: '0.85rem', 
+              color: '#888', 
+              marginTop: '-10px', 
+              marginBottom: '15px' 
+            }}>
+              Must include uppercase, lowercase, number, and special character (@$!%*?&)
+            </p>
 
             <Input
               label="Confirm Password"
@@ -140,12 +188,12 @@ const Register = () => {
               <span className="bonus-icon">GIFT</span>
               <div className="bonus-text">
                 <strong>Welcome Bonus</strong>
-                <p>Get $15,000 free credits on signup!</p>
+                <p>Get $10,000 free credits on signup!</p>
               </div>
             </div>
 
-            <Button type="submit" variant="primary" size="large" fullWidth>
-              Create Account
+            <Button type="submit" variant="primary" size="large" fullWidth disabled={loading}>
+              {loading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>
 

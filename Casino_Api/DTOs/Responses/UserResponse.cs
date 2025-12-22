@@ -11,18 +11,23 @@ namespace Casino.Backend.DTOs.Responses
         public int Id { get; set; }
 
         /// <summary>
-      /// Username
-  /// </summary>
+        /// Username
+        /// </summary>
         public string Username { get; set; } = string.Empty;
 
         /// <summary>
+        /// Email address
+        /// </summary>
+        public string Email { get; set; } = string.Empty;
+
+        /// <summary>
         /// Current wallet balance
-   /// </summary>
+        /// </summary>
         public decimal Balance { get; set; }
 
         /// <summary>
         /// When the account was created
-  /// </summary>
+        /// </summary>
         public DateTime CreatedAt { get; set; }
     }
 }
