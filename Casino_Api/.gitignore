@@ -1,0 +1,6 @@
+# SECURITY: Sensitive configuration files
+**/appsettings.json
+!**/appsettings.Development.json
+!**/appsettings.EXAMPLE.json
+# Note: appsettings.Production.json should never be committed
+**/appsettings.Production.json

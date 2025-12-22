@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Casino.Backend.Models;
 
 namespace Casino_Api.Models;
 
