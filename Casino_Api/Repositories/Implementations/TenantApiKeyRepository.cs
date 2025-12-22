@@ -20,7 +20,7 @@ _connectionFactory = connectionFactory;
         public async Task<TenantApiKey?> GetByIdAsync(int id)
   {
       const string sql = @"
- SELECT Id, TenantName, ApiKey, CreatedAt
+ SELECT Id, TenantName, ApiKey, IsActive, CreatedAt
         FROM TenantApiKeys
       WHERE Id = @Id";
 
@@ -31,8 +31,8 @@ _connectionFactory = connectionFactory;
  public async Task<IEnumerable<TenantApiKey>> GetAllAsync()
         {
     const string sql = @"
-   SELECT Id, TenantName, ApiKey, CreatedAt
-            FROM TenantApiKeys
+SELECT Id, TenantName, ApiKey, IsActive, CreatedAt
+    FROM TenantApiKeys
  ORDER BY CreatedAt DESC";
 
       using var connection = _connectionFactory.CreateConnection();
@@ -42,9 +42,9 @@ _connectionFactory = connectionFactory;
         public async Task<int> AddAsync(TenantApiKey entity)
     {
    const string sql = @"
-      INSERT INTO TenantApiKeys (TenantName, ApiKey, CreatedAt)
-    VALUES (@TenantName, @ApiKey, @CreatedAt);
-      SELECT LAST_INSERT_ID();";
+    INSERT INTO TenantApiKeys (TenantName, ApiKey, IsActive, CreatedAt)
+  VALUES (@TenantName, @ApiKey, @IsActive, @CreatedAt);
+    SELECT LAST_INSERT_ID();";
 
 using var connection = _connectionFactory.CreateConnection();
   var id = await connection.ExecuteScalarAsync<int>(sql, entity);
@@ -54,13 +54,14 @@ using var connection = _connectionFactory.CreateConnection();
 
   public async Task<bool> UpdateAsync(TenantApiKey entity)
    {
-            const string sql = @"
-      UPDATE TenantApiKeys
+   const string sql = @"
+   UPDATE TenantApiKeys
      SET TenantName = @TenantName,
-   ApiKey = @ApiKey
+   ApiKey = @ApiKey,
+       IsActive = @IsActive
    WHERE Id = @Id";
 
-         using var connection = _connectionFactory.CreateConnection();
+    using var connection = _connectionFactory.CreateConnection();
     var rowsAffected = await connection.ExecuteAsync(sql, entity);
      return rowsAffected > 0;
         }
@@ -77,7 +78,7 @@ return rowsAffected > 0;
      public async Task<TenantApiKey?> GetByApiKeyAsync(string apiKey)
    {
 const string sql = @"
- SELECT Id, TenantName, ApiKey, CreatedAt
+ SELECT Id, TenantName, ApiKey, IsActive, CreatedAt
   FROM TenantApiKeys
     WHERE ApiKey = @ApiKey
  LIMIT 1";
@@ -88,7 +89,7 @@ const string sql = @"
 
  public async Task<bool> ValidateApiKeyAsync(string apiKey)
 {
-const string sql = "SELECT COUNT(1) FROM TenantApiKeys WHERE ApiKey = @ApiKey";
+const string sql = "SELECT COUNT(1) FROM TenantApiKeys WHERE ApiKey = @ApiKey AND IsActive = 1";
 
      using var connection = _connectionFactory.CreateConnection();
    var count = await connection.ExecuteScalarAsync<int>(sql, new { ApiKey = apiKey });

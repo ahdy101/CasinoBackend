@@ -16,11 +16,7 @@ import Rules from './pages/Rules/Rules';
 import Privacy from './pages/Privacy/Privacy';
 import Contact from './pages/Contact/Contact';
 import AdminDashboard from './pages/Admin/AdminDashboard';
-import SavedGames from './pages/SavedGames/SavedGames';
 import Slots from './pages/Games/Slots';
-import Blackjack from './pages/Games/Blackjack';
-import Poker from './pages/Games/Poker';
-import Roulette from './pages/Games/Roulette';
 import './styles/theme.css';
 
 // Protected Route Component
@@ -67,21 +63,6 @@ function AppContent() {
             <Slots />
           </ProtectedRoute>} />
         <Route
-          path="/blackjack"
-          element={<ProtectedRoute>
-            <Blackjack />
-          </ProtectedRoute>} />
-        <Route
-          path="/poker"
-          element={<ProtectedRoute>
-            <Poker />
-          </ProtectedRoute>} />
-        <Route
-          path="/roulette"
-          element={<ProtectedRoute>
-            <Roulette />
-          </ProtectedRoute>} />
-        <Route
           path="/profile"
           element={<ProtectedRoute>
             <Profile />
@@ -126,11 +107,6 @@ function AppContent() {
           element={<AdminRoute>
             <AdminDashboard />
           </AdminRoute>} />
-            <Route
-              path="/saved-games"
-              element={<ProtectedRoute>
-                <SavedGames />
-              </ProtectedRoute>} />
           </Routes>
         </div>
       );

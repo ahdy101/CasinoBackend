@@ -11,7 +11,7 @@ const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -32,8 +32,8 @@ const Register = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.name) {
-      newErrors.name = 'Name is required';
+    if (!formData.username) {
+      newErrors.username = 'Username is required';
     }
     
     if (!formData.email) {
@@ -64,7 +64,7 @@ const Register = () => {
       return;
     }
 
-    const result = await register(formData.email, formData.password, formData.name);
+    const result = await register(formData.username, formData.email, formData.password);
     if (result.success) {
       setSuccessMessage(result.message);
       setTimeout(() => {
@@ -93,13 +93,13 @@ const Register = () => {
 
           <form onSubmit={handleSubmit}>
             <Input
-              label="Full Name"
+              label="Username"
               type="text"
-              name="name"
-              value={formData.name}
+              name="username"
+              value={formData.username}
               onChange={handleChange}
-              placeholder="Enter your name"
-              error={errors.name}
+              placeholder="Choose a username"
+              error={errors.username}
               required
             />
 

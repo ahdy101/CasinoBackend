@@ -87,44 +87,71 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Login with username and password (JSON body)
+    /// </summary>
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
+        {
+            return BadRequest(new ErrorResponse("Username and password are required"));
+        }
+
+        var tokenRequest = new TokenRequest
+        {
+            GrantType = "password",
+            Username = request.Username,
+            Password = request.Password,
+            WebApiKey = "default_tenant_api_key_12345" // Use default key for login endpoint
+        };
+
+        var result = await _authService.AuthenticateWithToken(tokenRequest);
+
+        if (!result.Success)
+        {
+            return Unauthorized(new ErrorResponse(result.Message));
+        }
+
+        var response = new LoginResponse
+        {
+            Token = result.Token,
+            ApiKey = "default_tenant_api_key_12345",
+            User = result.User!
+        };
+
+        return Ok(response);
+    }
+
+    /// <summary>
     /// Register a new user
     /// </summary>
     [HttpPost("register")]
-    [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register(
-        [FromQuery] string username,
-        [FromQuery] string email,
-        [FromQuery] string password,
-        [FromQuery] string apiKey)
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(email) ||
-            string.IsNullOrEmpty(password) || string.IsNullOrEmpty(apiKey))
+        if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
         {
-            return BadRequest(new ErrorResponse("Missing required parameters"));
+            return BadRequest(new ErrorResponse("Username and password are required"));
         }
-
-        // Validate API key
-        var unitOfWork = HttpContext.RequestServices.GetRequiredService<Repositories.Interfaces.IUnitOfWork>();
-        var isValidApiKey = await unitOfWork.TenantApiKeys.ValidateApiKeyAsync(apiKey);
-        if (!isValidApiKey)
-        {
-            return Unauthorized(new ErrorResponse("Invalid API key"));
-        }
-
-        var request = new RegisterRequest
-        {
-            Username = username,
-            Email = email,
-            Password = password
-        };
 
         var result = await _authService.Register(request);
 
         if (!result.Success)
             return BadRequest(new ErrorResponse(result.Message));
 
-        return Ok(result.User);
+        // Return login response with token
+        var response = new LoginResponse
+        {
+            Token = result.Token ?? string.Empty,
+            ApiKey = "default_tenant_api_key_12345",
+            User = result.User!
+        };
+
+        return Ok(response);
     }
 
     /// <summary>

@@ -11,7 +11,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
   const [errors, setErrors] = useState({});
@@ -31,10 +31,8 @@ const Login = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+    if (!formData.username) {
+      newErrors.username = 'Username is required';
     }
     
     if (!formData.password) {
@@ -59,7 +57,7 @@ const Login = () => {
     setErrors({});
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.username, formData.password);
       if (result.success) {
         navigate('/lobby');
       } else {
@@ -85,13 +83,13 @@ const Login = () => {
         <Card className="auth-card">
           <form onSubmit={handleSubmit}>
             <Input
-              label="Email"
-              type="email"
-              name="email"
-              value={formData.email}
+              label="Username"
+              type="text"
+              name="username"
+              value={formData.username}
               onChange={handleChange}
-              placeholder="Enter your email"
-              error={errors.email}
+              placeholder="Enter your username"
+              error={errors.username}
               required
             />
 

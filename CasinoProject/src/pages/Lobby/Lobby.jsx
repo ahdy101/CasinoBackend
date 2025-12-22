@@ -15,30 +15,6 @@ const Lobby = () => {
       description: 'Spin the reels for big wins',
       color: 'gold',
       path: '/slots'
-    },
-    {
-      id: 'blackjack',
-      name: 'Blackjack',
-      icon: FaGamepad,
-      description: 'Beat the dealer to 21',
-      color: 'silver',
-      path: '/blackjack'
-    },
-    {
-      id: 'poker',
-      name: 'Poker',
-      icon: FaStar,
-      description: 'Texas Hold\'em action',
-      color: 'gold',
-      path: '/poker'
-    },
-    {
-      id: 'roulette',
-      name: 'Roulette',
-      icon: FaDotCircle,
-      description: 'Place your bets and spin',
-      color: 'silver',
-      path: '/roulette'
     }
   ];
 

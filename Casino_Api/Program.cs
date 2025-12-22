@@ -22,9 +22,21 @@ builder.Services.AddScoped<IBlackjackGameRepository, BlackjackGameRepository>();
 builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
 builder.Services.AddScoped<ITenantApiKeyRepository, TenantApiKeyRepository>();
 
-// JWT Auth
+// JWT Auth - Validate configuration
 var jwtKey = builder.Configuration["Jwt:Key"];
-var keyBytes = System.Text.Encoding.UTF8.GetBytes(jwtKey ?? string.Empty);
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException(
+        "JWT Key is not configured. Please ensure 'Jwt:Key' is set in appsettings.json with a value of at least 32 characters.");
+}
+
+if (jwtKey.Length < 32)
+{
+    throw new InvalidOperationException(
+     $"JWT Key must be at least 32 characters long. Current length: {jwtKey.Length}");
+}
+
+var keyBytes = System.Text.Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -54,6 +66,23 @@ builder.Services.AddScoped<IRouletteEngine, RouletteEngine>();
 builder.Services.AddSingleton<IRandomNumberGenerator, CryptoRNG>();
 builder.Services.AddSingleton<ICardDeckFactory, CardDeckFactory>();
 
+// Add CORS for frontend applications
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+ {
+        policy.WithOrigins(
+    "http://localhost:3000",// React default
+            "http://localhost:5173",   // Vite default
+    "http://localhost:4200",   // Angular default
+   "http://localhost:8080"    // Vue default
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
+    });
+});
+
 builder.Services.AddControllers()
   .AddJsonOptions(options =>
     {
@@ -64,11 +93,56 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    // API Documentation
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Casino Backend API",
+ Version = "v1",
+        Description = "Casino gaming platform with Blackjack, Roulette, and wallet management. Auth endpoints are public. Game endpoints require JWT Bearer token + API key.",
+     Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+    Name = "Casino Backend Support",
+            Email = "support@casino.com"
+        }
+    });
+
+    // JWT Bearer Authentication for Swagger UI
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Get your token from POST /api/auth/login, then enter: Bearer {your_token}",
+     Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+     Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+      Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+    new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+     {
+          Reference = new Microsoft.OpenApi.Models.OpenApiReference
+        {
+           Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+ Id = "Bearer"
+      }
+         },
+            Array.Empty<string>()
+        }
+    });
+
+    // Clean schema IDs to avoid conflicts
+    options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+    
+    // Support nullable reference types
     options.SupportNonNullableReferenceTypes();
-    options.CustomSchemaIds(type => type.FullName);
 });
 
 var app = builder.Build();
+
+// Enable CORS before authentication
+app.UseCors("AllowFrontend");
 
 app.UseSwagger();
 app.UseSwaggerUI();

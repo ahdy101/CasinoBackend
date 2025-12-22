@@ -46,13 +46,13 @@ public class AuthService : IAuthService
         return (true, token, apiKey, userResponse, "Login successful");
     }
 
-    public async Task<(bool Success, UserResponse? User, string Message)> Register(RegisterRequest request)
+    public async Task<(bool Success, string? Token, UserResponse? User, string Message)> Register(RegisterRequest request)
     {
         if (await _unitOfWork.Users.EmailExistsAsync(request.Email))
-            return (false, null, "Email already exists");
+            return (false, null, null, "Email already exists");
 
         if (await _unitOfWork.Users.UsernameExistsAsync(request.Username))
-            return (false, null, "Username already exists");
+            return (false, null, null, "Username already exists");
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
@@ -61,12 +61,16 @@ public class AuthService : IAuthService
             Username = request.Username,
             Email = request.Email,
             PasswordHash = passwordHash,
-            Balance = 1000m, // Initial welcome bonus
-            CreatedAt = DateTime.UtcNow
+            Balance = request.InitialBalance > 0 ? request.InitialBalance : 10000m,
+            CreatedAt = DateTime.UtcNow,
+            Role = "player"
         };
 
         await _unitOfWork.Users.AddAsync(user);
         await _unitOfWork.SaveChangesAsync();
+
+        // Generate token for immediate login
+        var token = GenerateJwtTokenWithRoleAndExpiry(user.Id, user.Username, user.Role, 30);
 
         var userResponse = new UserResponse
         {
@@ -77,7 +81,7 @@ public class AuthService : IAuthService
             CreatedAt = user.CreatedAt
         };
 
-        return (true, userResponse, "Registration successful");
+        return (true, token, userResponse, "Registration successful");
     }
 
     public async Task<(bool Success, UserResponse? User, string Message)> GetUserById(int userId)

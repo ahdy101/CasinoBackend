@@ -81,7 +81,6 @@ const Header = () => {
                       <div className="profile-divider"></div>
                     </>
                   )}
-                  <Link to="/saved-games" className="profile-menu-item"><MdSave /> Saved Games</Link>
                   <Link to="/wallet" className="profile-menu-item"><MdAccountBalanceWallet /> Wallet</Link>
                   <Link to="/transactions" className="profile-menu-item"><MdHistory /> Transactions</Link>
                   <Link to="/settings" className="profile-menu-item"><MdSettings /> Settings</Link>

@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_ENDPOINTS, API_BASE_URL } from '../config/api';
 
 const AuthContext = createContext();
-const API_URL = 'http://localhost:5001/api';
+const API_URL = API_ENDPOINTS.AUTH;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -62,24 +63,31 @@ export const AuthProvider = ({ children }) => {
     }
   }, [balance, transactions, gameHistory, stats, user]);
 
-  const login = async (email, password) => {
+  const login = async (username, password) => {
     try {
-      console.log('Attempting login to:', `${API_URL}/auth/login`);
-      console.log('Email:', email);
+      console.log('Attempting login to:', `${API_URL}/login`);
+      console.log('Username:', username);
       
-      const response = await axios.post(`${API_URL}/auth/login`, {
-        email: email,
+      const response = await axios.post(`${API_URL}/login`, {
+        username: username,
         password: password
-      }, {
-        headers: {
-          'X-API-KEY': 'default_tenant_api_key_12345'
-        }
       });
 
       console.log('Login response:', response.data);
-      const { token, user: userData } = response.data;
       
-      const isAdminLogin = email === 'admin@casinoapi.com' || email === 'admin@silverslayed.com';
+      // Handle both response formats
+      let token, userData;
+      if (response.data.user) {
+        // Format: { token, user: {...} }
+        token = response.data.token;
+        userData = response.data.user;
+      } else {
+        // Format: { token, username, ... } - properties at root
+        token = response.data.token;
+        userData = response.data;
+      }
+      
+      const isAdminLogin = username === 'admin' || username === 'administrator';
       
       const user = {
         id: userData.id,
@@ -97,12 +105,12 @@ export const AuthProvider = ({ children }) => {
       };
 
       setUser(user);
-      setBalance(userData.balance);
+      setBalance(userData.balance || 10000);
       setIsAdmin(isAdminLogin);
       
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('token', token);
-      localStorage.setItem('balance', userData.balance.toString());
+      localStorage.setItem('balance', (userData.balance || 10000).toString());
       localStorage.setItem('isAdmin', isAdminLogin.toString());
       
       return { success: true };
@@ -114,7 +122,8 @@ export const AuthProvider = ({ children }) => {
       let errorMessage = 'Login failed';
       
       if (error.code === 'ERR_NETWORK') {
-        errorMessage = 'Cannot connect to server. Please ensure the API is running on port 5001.';
+        const port = API_BASE_URL.match(/:(\d+)/)?.[1] || '5001';
+        errorMessage = `Cannot connect to server. Please ensure the API is running on port ${port}.`;
       } else if (error.response) {
         errorMessage = error.response.data?.message || error.response.data?.Message || `Server error: ${error.response.status}`;
       } else if (error.request) {
@@ -125,24 +134,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (email, password, name) => {
+  const register = async (username, email, password, initialBalance = 10000) => {
     try {
-      const response = await axios.post(`${API_URL}/auth/register`, {
-        username: name || email.split('@')[0],
+      const response = await axios.post(`${API_URL}/register`, {
+        username: username,
         email: email,
-        password: password
-      }, {
-        headers: {
-          'X-API-KEY': 'default_tenant_api_key_12345'
-        }
+        password: password,
+        initialBalance: initialBalance
       });
 
-      const userData = response.data;
+      // Handle response with token and user
+      const { token, user: userData } = response.data;
+      
       const user = {
         id: userData.id,
         email: userData.email,
         name: userData.username,
         joinDate: userData.createdAt,
+        role: 'user',
         settings: {
           notifications: true,
           emailUpdates: true,
@@ -155,9 +164,10 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       setBalance(userData.balance);
       localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
       localStorage.setItem('balance', userData.balance.toString());
       
-      return { success: true, message: 'Welcome bonus: 1,000 chips added!' };
+      return { success: true, message: `Welcome! You received ${userData.balance.toLocaleString()} chips!` };
     } catch (error) {
       console.error('Registration error:', error);
       const errorMessage = error.response?.data?.message || error.response?.data?.Message || 'Registration failed';

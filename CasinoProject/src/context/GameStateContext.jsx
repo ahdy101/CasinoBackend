@@ -2,7 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 const GameStateContext = createContext();
-const API_URL = 'http://localhost:5001/api/gamestate';
+import { API_ENDPOINTS } from '../config/api';
+
+const API_URL = API_ENDPOINTS.GAMESTATE;
 
 export const useGameState = () => {
   const context = useContext(GameStateContext);
