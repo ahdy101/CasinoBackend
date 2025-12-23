@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { LOGO } from '../../constants/images';
 import Input from '../../components/common/Input';
@@ -59,12 +60,15 @@ const Login = () => {
     try {
       const result = await login(formData.username, formData.password);
       if (result.success) {
+        toast.success('Login successful! Welcome back.');
         navigate('/lobby');
       } else {
+        toast.error(result.message || 'Login failed. Please try again.');
         setErrors({ general: result.message || 'Login failed. Please try again.' });
       }
     } catch (error) {
       console.error('Login error:', error);
+      toast.error('Network error. Please check if the API server is running.');
       setErrors({ general: 'Network error. Please check if the API server is running.' });
     } finally {
       setLoading(false);

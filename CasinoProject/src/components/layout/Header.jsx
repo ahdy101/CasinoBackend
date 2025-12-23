@@ -6,7 +6,7 @@ import { MdLightMode, MdDarkMode, MdAccountBalanceWallet, MdHistory, MdSettings,
 import { LOGO_ICON } from '../../constants/images';
 import './Header.css';
 
-const Header = () => {
+const Header = ({ hideNav = false }) => {
   const { user, balance, logout, isAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -36,16 +36,18 @@ const Header = () => {
           </div>
         </Link>
 
-        <nav className="nav-links">
-          <Link to="/lobby" className="nav-link">Games</Link>
-          <Link to="/about" className="nav-link">About</Link>
-          <Link to="/rules" className="nav-link">Rules</Link>
-          <Link to="/privacy" className="nav-link">Privacy</Link>
-          <Link to="/contact" className="nav-link">Contact</Link>
-        </nav>
+        {!hideNav && (
+          <nav className="nav-links">
+            <Link to="/lobby" className="nav-link">Games</Link>
+            <Link to="/about" className="nav-link">About</Link>
+            <Link to="/rules" className="nav-link">Rules</Link>
+            <Link to="/privacy" className="nav-link">Privacy</Link>
+            <Link to="/contact" className="nav-link">Contact</Link>
+          </nav>
+        )}
 
         <div className="header-actions">
-          {user && (
+          {user && !isAdmin && (
             <div className="balance-widget">
               <span className="balance-label">Balance</span>
               <span className="balance-amount">{formatBalance(balance)}</span>
@@ -70,31 +72,51 @@ const Header = () => {
               
               {showProfileMenu && (
                 <div className="profile-dropdown">
-                  <div className="profile-info">
-                    <strong>{user.name}</strong>
-                    <small>{user.email}</small>
-                  </div>
-                  <div className="profile-divider"></div>
-                  {isAdmin && (
+                  {isAdmin ? (
                     <>
-                      <Link to="/admin" className="profile-menu-item admin"><MdDashboard /> Admin Dashboard</Link>
+                      <div className="profile-info">
+                        <strong>{user.name}</strong>
+                        <small>Administrator</small>
+                      </div>
                       <div className="profile-divider"></div>
+                      <button onClick={handleLogout} className="profile-menu-item logout">
+                        <MdLogout /> Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="profile-info">
+                        <strong>{user.name}</strong>
+                        <small>{user.email}</small>
+                      </div>
+                      <div className="profile-divider"></div>
+                      <Link to="/wallet" className="profile-menu-item" onClick={() => setShowProfileMenu(false)}>
+                        <MdAccountBalanceWallet /> Wallet
+                      </Link>
+                      <Link to="/transactions" className="profile-menu-item" onClick={() => setShowProfileMenu(false)}>
+                        <MdHistory /> Transactions
+                      </Link>
+                      <Link to="/settings" className="profile-menu-item" onClick={() => setShowProfileMenu(false)}>
+                        <MdSettings /> Settings
+                      </Link>
+                      <div className="profile-divider"></div>
+                      <button onClick={handleLogout} className="profile-menu-item logout">
+                        <MdLogout /> Logout
+                      </button>
                     </>
                   )}
-                  <Link to="/wallet" className="profile-menu-item"><MdAccountBalanceWallet /> Wallet</Link>
-                  <Link to="/transactions" className="profile-menu-item"><MdHistory /> Transactions</Link>
-                  <Link to="/settings" className="profile-menu-item"><MdSettings /> Settings</Link>
-                  <div className="profile-divider"></div>
-                  <button onClick={handleLogout} className="profile-menu-item logout">
-                    <MdLogout /> Logout
-                  </button>
                 </div>
               )}
             </div>
           ) : (
-            <Link to="/login">
-              <button className="login-button">Login</button>
-            </Link>
+            <div className="auth-buttons">
+              <Link to="/login">
+                <button className="login-button">Login</button>
+              </Link>
+              <Link to="/register">
+                <button className="register-button">Register</button>
+              </Link>
+            </div>
           )}
         </div>
       </div>

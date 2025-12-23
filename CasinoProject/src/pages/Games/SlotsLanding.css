@@ -1,0 +1,218 @@
+.slots-landing-container {
+  padding: 1rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  margin-top: 10px;
+}
+
+.slots-hero {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.slots-title {
+  font-size: 1.8rem;
+  color: var(--gold);
+  margin-bottom: 0.3rem;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.slots-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-color);
+  opacity: 0.9;
+}
+
+.search-section {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.search-bar {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-color);
+  opacity: 0.5;
+  font-size: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.8rem 1rem 0.8rem 2.5rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-color);
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.slot-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.slot-card {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+  border: 2px solid var(--border-color);
+  min-height: 200px;
+  overflow: hidden;
+}
+
+.slot-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.2);
+  border-color: var(--gold);
+}
+
+.slot-disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.slot-disabled:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--border-color);
+}
+
+.coming-soon-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: linear-gradient(135deg, var(--gold), #b8941f);
+  color: var(--dark-bg);
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.slot-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+}
+
+.slot-game-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.slot-card-title {
+  font-size: 1rem;
+  color: var(--gold);
+  text-align: center;
+  font-weight: bold;
+  margin: 0;
+}
+
+.slot-jackpot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: auto 0 0.5rem 0;
+  padding: 0.4rem;
+  background: rgba(212, 175, 55, 0.2);
+  backdrop-filter: blur(4px);
+  border-radius: 6px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.jackpot-label {
+  font-size: 0.65rem;
+  color: var(--text-color);
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.1rem;
+}
+
+.jackpot-value {
+  font-size: 0.95rem;
+  color: var(--gold);
+  font-weight: bold;
+}
+
+.no-results {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-color);
+  opacity: 0.7;
+  font-size: 1.1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .slots-landing-container {
+    padding: 1rem;
+  }
+
+  .slots-title {
+    font-size: 2rem;
+  }
+
+  .slots-subtitle {
+    font-size: 1rem;
+  }
+
+  .slots-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .slot-card {
+    padding: 1.5rem;
+  }
+
+  .slot-icon {
+    font-size: 3rem;
+  }
+
+  .slot-name {
+    font-size: 1.3rem;
+  }
+}

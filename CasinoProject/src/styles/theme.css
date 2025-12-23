@@ -80,6 +80,14 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color var(--transition-normal), color var(--transition-normal);
+  margin: 0;
+  padding: 0;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 /* Metallic Gradient Effects */
@@ -107,4 +115,23 @@ body {
 .card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 12px var(--shadow-color);
+}
+
+/* App Layout with Sidebar */
+.app-content-with-sidebar {
+  margin-left: 200px;
+  margin-top: 0;
+  transition: margin-left var(--transition-normal);
+}
+
+@media (max-width: 968px) {
+  .app-content-with-sidebar {
+    margin-left: 70px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-content-with-sidebar {
+    margin-left: 0;
+  }
 }

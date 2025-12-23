@@ -6,13 +6,13 @@ import { FaDiceD6 } from 'react-icons/fa';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { ATLAS } from '../../constants/images';
-import './Slots.css';
+import './BeatAtlas.css';
 
-const Slots = () => {
+const BeatAtlas = () => {
   const { balance, updateBalance, isAuthenticated, isAdmin } = useAuth();
   const { updateGameStats } = useGameState();
   const [bet, setBet] = useState(10);
-  const [reels, setReels] = useState(['🍒', '🍋', '⭐']);
+  const [reels, setReels] = useState(['CHR', 'LEM', 'STR']);
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -28,15 +28,17 @@ const Slots = () => {
 
   // Slot symbols with their display representation and payout multipliers
   const symbols = [
-    { id: 'cherry', display: '🍒', payout: 5 },
-    { id: 'lemon', display: '🍋', payout: 5 },
-    { id: 'orange', display: '🍊', payout: 5 },
-    { id: 'grape', display: '🍇', payout: 8 },
-    { id: 'watermelon', display: '🍉', payout: 8 },
-    { id: 'star', display: '⭐', payout: 10 },
-    { id: 'diamond', display: '💎', payout: 15 },
-    { id: 'atlas', display: 'atlas', payout: 20, isImage: true }, // Special Atlas symbol
-    { id: 'seven', display: '7️⃣', payout: 25 }
+    { id: 'cherry', display: 'CHR', payout: 5 },
+    { id: 'lemon', display: 'LEM', payout: 5 },
+    { id: 'orange', display: 'ORG', payout: 5 },
+    { id: 'grape', display: 'GRP', payout: 5 },
+    { id: 'watermelon', display: 'WTR', payout: 6 },
+    { id: 'star', display: 'STR', payout: 8 },
+    { id: 'bell', display: 'BEL', payout: 10 },
+    { id: 'diamond', display: 'DMD', payout: 12 },
+    { id: 'clover', display: 'CLV', payout: 15 },
+    { id: 'atlas', display: 'atlas', payout: 20, isImage: true },
+    { id: 'seven', display: 'SVN', payout: 25 }
   ];
 
   const getRandomSymbol = () => {
@@ -81,7 +83,7 @@ const Slots = () => {
         winAmount = bet * finalReels[0].payout;
         updateBalance(winAmount);
         const symbolName = finalReels[0].id === 'atlas' ? 'ATLAS' : finalReels[0].display;
-        setResult({ type: 'win', message: `🎉 JACKPOT! ${symbolName} x3! You won $${winAmount}!` });
+        setResult({ type: 'win', message: `JACKPOT! ${symbolName} x3! You won $${winAmount}!` });
       } 
       // Check for 2 matching
       else if (finalReels[0].id === finalReels[1].id || finalReels[1].id === finalReels[2].id || finalReels[0].id === finalReels[2].id) {
@@ -105,7 +107,7 @@ const Slots = () => {
   return (
     <div className="game-container">
       <div className="game-content">
-        <h1 className="game-title"><FaDiceD6 /> Slots</h1>
+        <h1 className="game-title"><FaDiceD6 /> Beat Atlas</h1>
         
         <Card className="game-card-main">
           <div className="slots-machine">
@@ -171,35 +173,35 @@ const Slots = () => {
           <div className="payout-table">
             <h3>Payout Table</h3>
             <div className="payout-row highlight">
-              <span>7️⃣ 7️⃣ 7️⃣</span>
+              <span>SVN SVN SVN</span>
               <span className="payout-value">25x bet</span>
             </div>
             <div className="payout-row highlight">
-              <span>🏛️ ATLAS x3</span>
+              <span>ATLAS x3</span>
               <span className="payout-value">20x bet</span>
             </div>
             <div className="payout-row">
-              <span>🍀 🍀 🍀</span>
+              <span>CLV CLV CLV</span>
               <span className="payout-value">15x bet</span>
             </div>
             <div className="payout-row">
-              <span>💎 💎 💎</span>
+              <span>DMD DMD DMD</span>
               <span className="payout-value">12x bet</span>
             </div>
             <div className="payout-row">
-              <span>🔔 🔔 🔔</span>
+              <span>BEL BEL BEL</span>
               <span className="payout-value">10x bet</span>
             </div>
             <div className="payout-row">
-              <span>⭐ ⭐ ⭐</span>
+              <span>STR STR STR</span>
               <span className="payout-value">8x bet</span>
             </div>
             <div className="payout-row">
-              <span>🍉 🍉 🍉</span>
+              <span>WTR WTR WTR</span>
               <span className="payout-value">6x bet</span>
             </div>
             <div className="payout-row">
-              <span>🍒 🍋 🍊 (any fruit x3)</span>
+              <span>CHR LEM ORG (any fruit x3)</span>
               <span className="payout-value">5x bet</span>
             </div>
             <div className="payout-row">
@@ -213,4 +215,4 @@ const Slots = () => {
   );
 };
 
-export default Slots;
+export default BeatAtlas;

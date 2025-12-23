@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { LOGO } from '../../constants/images';
 import Input from '../../components/common/Input';
@@ -75,6 +76,7 @@ const Register = () => {
     if (Object.keys(newErrors).length > 0) {
       console.log('Validation errors:', newErrors);
       setErrors(newErrors);
+      toast.error('Please fix the form errors');
       return;
     }
 
@@ -87,15 +89,18 @@ const Register = () => {
       console.log('Register result:', result);
       
       if (result.success) {
+        toast.success(result.message || 'Registration successful! Redirecting...');
         setSuccessMessage(result.message);
         setTimeout(() => {
           navigate('/lobby');
         }, 2000);
       } else {
+        toast.error(result.message || 'Registration failed');
         setErrors({ general: result.message });
       }
     } catch (error) {
       console.error('Registration error:', error);
+      toast.error('Network error. Please check if the API server is running.');
       setErrors({ general: 'Network error. Please check if the API server is running.' });
     } finally {
       setLoading(false);

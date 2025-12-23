@@ -1,9 +1,13 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GameStateProvider } from './context/GameStateContext';
 import Header from './components/layout/Header';
+import AdminSidebar from './components/layout/AdminSidebar';
+import GameTypeSidebar from './components/layout/GameTypeSidebar';
+import Footer from './components/layout/Footer';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import Lobby from './pages/Lobby/Lobby';
@@ -16,7 +20,8 @@ import Rules from './pages/Rules/Rules';
 import Privacy from './pages/Privacy/Privacy';
 import Contact from './pages/Contact/Contact';
 import AdminDashboard from './pages/Admin/AdminDashboard';
-import Slots from './pages/Games/Slots';
+import SlotsLanding from './pages/Games/SlotsLanding';
+import BeatAtlas from './pages/Games/BeatAtlas';
 import './styles/theme.css';
 
 // Protected Route Component
@@ -41,26 +46,76 @@ const AdminRoute = ({ children }) => {
 };
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
+  const location = useLocation();
+
+  // Show admin sidebar on all admin routes
+  const showAdminSidebar = isAuthenticated && isAdmin && location.pathname.startsWith('/admin');
+  
+  // Show game type sidebar when in game areas (slots, etc.) - but not for admin
+  const showGameTypeSidebar = location.pathname.startsWith('/slots') && !isAdmin;
+  
+  // Hide header nav links when in game areas
+  const hideHeaderNav = location.pathname.startsWith('/slots');
+
+  if (isLoading) {
+    return (
+      <div className="app">
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh',
+          color: 'var(--gold)',
+          fontSize: '1.5rem'
+        }}>
+          Loading...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
-      {isAuthenticated && <Header />}
-      <Routes>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'var(--bg-secondary)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          },
+          success: {
+            iconTheme: {
+              primary: 'var(--gold)',
+              secondary: 'white',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: 'var(--error)',
+              secondary: 'white',
+            },
+          },
+        }}
+      />
+      {<Header hideNav={hideHeaderNav} />}
+      {showAdminSidebar && <AdminSidebar />}
+      {showGameTypeSidebar && <GameTypeSidebar />}
+      <div className={showAdminSidebar || showGameTypeSidebar ? 'app-content-with-sidebar' : ''}>
+        <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/" element={<Navigate to="/lobby" />} />
+          <Route path="/lobby" element={<Lobby />} />
+          <Route path="/slots" element={<SlotsLanding />} />
           <Route
-            path="/"
-            element={isAuthenticated ? <Navigate to="/lobby" /> : <Navigate to="/login" />} />
-          <Route
-            path="/lobby"
+            path="/slots/beat-atlas"
             element={<ProtectedRoute>
-              <Lobby />
-            </ProtectedRoute>} />
-          <Route
-            path="/slots"
-            element={<ProtectedRoute>
-              <Slots />
+              <BeatAtlas />
             </ProtectedRoute>} />
         <Route
           path="/profile"
@@ -82,32 +137,18 @@ function AppContent() {
           element={<ProtectedRoute>
             <Settings />
           </ProtectedRoute>} />
-        <Route
-          path="/about"
-          element={<ProtectedRoute>
-            <About />
-          </ProtectedRoute>} />
-        <Route
-          path="/rules"
-          element={<ProtectedRoute>
-            <Rules />
-          </ProtectedRoute>} />
-        <Route
-          path="/privacy"
-          element={<ProtectedRoute>
-            <Privacy />
-          </ProtectedRoute>} />
-        <Route
-          path="/contact"
-          element={<ProtectedRoute>
-            <Contact />
-          </ProtectedRoute>} />
+        <Route path="/about" element={<About />} />
+        <Route path="/rules" element={<Rules />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/contact" element={<Contact />} />
         <Route
           path="/admin"
           element={<AdminRoute>
             <AdminDashboard />
           </AdminRoute>} />
       </Routes>
+      </div>
+      <Footer />
     </div>
   );
 }

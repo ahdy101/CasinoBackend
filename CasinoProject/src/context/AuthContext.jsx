@@ -16,6 +16,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [balance, setBalance] = useState(10000); // Starting balance in chips
   const [transactions, setTransactions] = useState([]);
   const [gameHistory, setGameHistory] = useState([]);
@@ -29,15 +30,21 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    // Load saved data from localStorage
+    // Load saved data from localStorage and restore session
     const savedUser = localStorage.getItem('user');
+    const savedToken = localStorage.getItem('token');
     const savedBalance = localStorage.getItem('balance');
     const savedTransactions = localStorage.getItem('transactions');
     const savedGameHistory = localStorage.getItem('gameHistory');
     const savedStats = localStorage.getItem('stats');
+    const savedIsAdmin = localStorage.getItem('isAdmin');
 
-    if (savedUser) {
+    // Restore session if token exists
+    if (savedUser && savedToken) {
       setUser(JSON.parse(savedUser));
+      if (savedIsAdmin === 'true') {
+        setIsAdmin(true);
+      }
     }
     if (savedBalance) {
       setBalance(parseFloat(savedBalance));
@@ -51,6 +58,9 @@ export const AuthProvider = ({ children }) => {
     if (savedStats) {
       setStats(JSON.parse(savedStats));
     }
+    
+    // Set loading to false after restore attempt
+    setIsLoading(false);
   }, []);
 
   // Save data to localStorage whenever it changes
@@ -208,6 +218,7 @@ export const AuthProvider = ({ children }) => {
     setBalance(10000);
     setTransactions([]);
     setGameHistory([]);
+    setIsAdmin(false);
     setStats({
       totalGames: 0,
       totalWins: 0,
@@ -217,10 +228,12 @@ export const AuthProvider = ({ children }) => {
       totalWagered: 0
     });
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     localStorage.removeItem('balance');
     localStorage.removeItem('transactions');
     localStorage.removeItem('gameHistory');
     localStorage.removeItem('stats');
+    localStorage.removeItem('isAdmin');
   };
 
   const updateBalance = (amount) => {
@@ -291,6 +304,7 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider value={{ 
       user, 
       isAdmin,
+      isLoading,
       balance, 
       transactions,
       gameHistory,
