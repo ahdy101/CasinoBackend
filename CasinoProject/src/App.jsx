@@ -55,8 +55,8 @@ function AppContent() {
   // Show game type sidebar when in game areas (slots, etc.) - but not for admin
   const showGameTypeSidebar = location.pathname.startsWith('/slots') && !isAdmin;
   
-  // Hide header nav links when in game areas
-  const hideHeaderNav = location.pathname.startsWith('/slots');
+  // Hide header nav links when in game areas or admin dashboard
+  const hideHeaderNav = location.pathname.startsWith('/slots') || (isAuthenticated && isAdmin);
 
   if (isLoading) {
     return (

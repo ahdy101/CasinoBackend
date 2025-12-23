@@ -123,7 +123,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('balance', (userData.balance || 10000).toString());
       localStorage.setItem('isAdmin', isAdminLogin.toString());
       
-      return { success: true };
+      return { success: true, user: user, isAdmin: isAdminLogin };
     } catch (error) {
       console.error('Login error:', error);
       console.error('Error response:', error.response);

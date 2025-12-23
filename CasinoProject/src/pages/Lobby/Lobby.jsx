@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { FaUsers, FaTrophy, FaGamepad, FaDiceD6, FaStar, FaHeart, FaDice, FaCoins, FaCircle, FaSearch } from 'react-icons/fa';
 import Card from '../../components/common/Card';
 import './Lobby.css';
 
 const Lobby = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Redirect admin to dashboard
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
 
   const allGames = [
     {

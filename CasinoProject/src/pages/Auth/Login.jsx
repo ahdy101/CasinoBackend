@@ -61,7 +61,12 @@ const Login = () => {
       const result = await login(formData.username, formData.password);
       if (result.success) {
         toast.success('Login successful! Welcome back.');
-        navigate('/lobby');
+        // Check if user is admin and redirect accordingly
+        if (result.isAdmin) {
+          navigate('/admin');
+        } else {
+          navigate('/lobby');
+        }
       } else {
         toast.error(result.message || 'Login failed. Please try again.');
         setErrors({ general: result.message || 'Login failed. Please try again.' });
