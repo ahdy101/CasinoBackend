@@ -8,11 +8,14 @@
         public string PasswordHash { get; set; }
         public decimal Balance { get; set; } = 0m;
         public string Role { get; set; } = "Player";
+        public KycStatus KycStatus { get; set; } = KycStatus.NotStarted;
         public bool IsDeleted { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? ModifiedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
         public int? TenantId { get; set; }
-    }
 
+        public KycDetails? KycDetails { get; set; }
+        public ICollection<KycDocument>? KycDocuments { get; set; }
+    }
 }

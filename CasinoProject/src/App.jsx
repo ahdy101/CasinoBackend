@@ -47,21 +47,21 @@ function AppContent() {
     <div className="app">
       {isAuthenticated && <Header />}
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route
-          path="/"
-          element={isAuthenticated ? <Navigate to="/lobby" /> : <Navigate to="/login" />} />
-        <Route
-          path="/lobby"
-          element={<ProtectedRoute>
-            <Lobby />
-          </ProtectedRoute>} />
-        <Route
-          path="/slots"
-          element={<ProtectedRoute>
-            <Slots />
-          </ProtectedRoute>} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route
+            path="/"
+            element={isAuthenticated ? <Navigate to="/lobby" /> : <Navigate to="/login" />} />
+          <Route
+            path="/lobby"
+            element={<ProtectedRoute>
+              <Lobby />
+            </ProtectedRoute>} />
+          <Route
+            path="/slots"
+            element={<ProtectedRoute>
+              <Slots />
+            </ProtectedRoute>} />
         <Route
           path="/profile"
           element={<ProtectedRoute>
@@ -107,10 +107,10 @@ function AppContent() {
           element={<AdminRoute>
             <AdminDashboard />
           </AdminRoute>} />
-          </Routes>
-        </div>
-      );
-    }
+      </Routes>
+    </div>
+  );
+}
 
 function App() {
   return (

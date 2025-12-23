@@ -1,6 +1,7 @@
 {
   "name": "the-silver-slayed",
   "version": "1.0.0",
+  "type": "module",
   "description": "Luxury Vegas-style online casino web app",
   "private": true,
   "scripts": {

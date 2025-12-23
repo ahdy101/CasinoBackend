@@ -49,6 +49,18 @@
   box-shadow: 
     inset 0 0 20px rgba(0, 0, 0, 0.3),
     0 0 30px rgba(212, 175, 55, 0.3);
+  overflow: hidden;
+}
+
+.slot-reel .symbol-image {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.5));
+}
+
+.slot-reel .symbol-emoji {
+  font-size: 4rem;
 }
 
 .slot-reel.spinning {
@@ -151,6 +163,12 @@
   color: var(--text-secondary);
 }
 
+.payout-row.highlight {
+  background: rgba(212, 175, 55, 0.1);
+  border-left: 3px solid var(--gold);
+  padding-left: var(--spacing-md);
+}
+
 .payout-value {
   color: var(--gold);
   font-weight: 700;
@@ -164,6 +182,14 @@
   .slot-reel {
     width: 90px;
     height: 90px;
+  }
+  
+  .slot-reel .symbol-image {
+    width: 85px;
+    height: 85px;
+  }
+  
+  .slot-reel .symbol-emoji {
     font-size: 3rem;
   }
   
