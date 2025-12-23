@@ -46,5 +46,20 @@ namespace Casino.Backend.Services.Interfaces
         /// <param name="userId">User ID</param>
         /// <returns>User object or null</returns>
         Task<User?> GetUserByIdAsync(int userId);
+
+        /// <summary>
+        /// Initiate password reset - generates token
+        /// </summary>
+        Task<string> ForgotPasswordAsync(string email);
+
+        /// <summary>
+        /// Reset password using token
+        /// </summary>
+        Task<bool> ResetPasswordAsync(string token, string newPassword);
+
+        /// <summary>
+        /// Update user profile
+        /// </summary>
+        Task<User> UpdateProfileAsync(int userId, string? newUsername, string? newEmail);
     }
 }

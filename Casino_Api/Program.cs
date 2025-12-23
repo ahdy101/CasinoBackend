@@ -21,6 +21,7 @@ builder.Services.AddScoped<IBetRepository, BetRepository>();
 builder.Services.AddScoped<IBlackjackGameRepository, BlackjackGameRepository>();
 builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
 builder.Services.AddScoped<ITenantApiKeyRepository, TenantApiKeyRepository>();
+builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
 
 // JWT Auth - Validate configuration
 var jwtKey = builder.Configuration["Jwt:Key"];
