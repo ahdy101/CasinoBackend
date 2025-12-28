@@ -13,5 +13,6 @@ namespace Casino.Backend.Repositories.Interfaces
         Task<bool> EmailExistsAsync(string email);
         Task<decimal> GetBalanceAsync(int userId);
       Task UpdateBalanceAsync(int userId, decimal newBalance);
-    }
+        Task<IEnumerable<User>> GetUsersByRoleAsync(string role);
+ }
 }

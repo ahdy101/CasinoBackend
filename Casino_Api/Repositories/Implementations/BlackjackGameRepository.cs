@@ -2,127 +2,182 @@ using Casino.Backend.Data;
 using Casino.Backend.Models;
 using Casino.Backend.Repositories.Interfaces;
 using Dapper;
+using System.Data;
 
 namespace Casino.Backend.Repositories.Implementations
 {
-    /// <summary>
-    /// Dapper-based repository for BlackjackGame using raw SQL
-    /// </summary>
     public class BlackjackGameRepository : IBlackjackGameRepository
     {
-        private readonly IDbConnectionFactory _connectionFactory;
+     private readonly IDbConnection _connection;
+        private readonly ILogger<BlackjackGameRepository> _logger;
 
-        public BlackjackGameRepository(IDbConnectionFactory connectionFactory)
-    {
-      _connectionFactory = connectionFactory;
-        }
+        public BlackjackGameRepository(IDbConnectionFactory connectionFactory, ILogger<BlackjackGameRepository> logger)
+        {
+      _connection = connectionFactory.CreateConnection();
+            _logger = logger;
+ }
 
         public async Task<BlackjackGame?> GetByIdAsync(int id)
-        {
- const string sql = @"
-        SELECT Id, UserId, BetAmount, PlayerCards, DealerCards, 
-         PlayerTotal, DealerTotal, Status, Payout, CreatedAt, CompletedAt
-  FROM BlackjackGames
-    WHERE Id = @Id";
+     {
+      try
+      {
+          const string sql = @"
+    SELECT Id, UserId, BetAmount, PlayerCards, DealerCards, 
+   PlayerTotal, DealerTotal, Status, Payout, CreatedAt, CompletedAt
+      FROM BlackjackGames
+         WHERE Id = @Id";
 
-        using var connection = _connectionFactory.CreateConnection();
-        return await connection.QueryFirstOrDefaultAsync<BlackjackGame>(sql, new { Id = id });
-        }
+   return await _connection.QueryFirstOrDefaultAsync<BlackjackGame>(sql, new { Id = id });
+            }
+            catch (Exception ex)
+{
+   _logger.LogError(ex, "Error getting blackjack game by ID: {Id}", id);
+       throw;
+       }
+   }
 
         public async Task<IEnumerable<BlackjackGame>> GetAllAsync()
         {
+       try
+{
          const string sql = @"
-     SELECT Id, UserId, BetAmount, PlayerCards, DealerCards, 
-     PlayerTotal, DealerTotal, Status, Payout, CreatedAt, CompletedAt
-  FROM BlackjackGames
-      ORDER BY CreatedAt DESC";
+      SELECT Id, UserId, BetAmount, PlayerCards, DealerCards, 
+      PlayerTotal, DealerTotal, Status, Payout, CreatedAt, CompletedAt
+        FROM BlackjackGames
+        ORDER BY CreatedAt DESC";
 
-       using var connection = _connectionFactory.CreateConnection();
-         return await connection.QueryAsync<BlackjackGame>(sql);
+           return await _connection.QueryAsync<BlackjackGame>(sql);
+}
+  catch (Exception ex)
+         {
+          _logger.LogError(ex, "Error getting all blackjack games");
+                throw;
+ }
         }
 
-      public async Task<int> AddAsync(BlackjackGame entity)
-   {
-            const string sql = @"
-   INSERT INTO BlackjackGames 
-              (UserId, BetAmount, PlayerCards, DealerCards, PlayerTotal, DealerTotal, Status, Payout, CreatedAt, CompletedAt)
-         VALUES 
-          (@UserId, @BetAmount, @PlayerCards, @DealerCards, @PlayerTotal, @DealerTotal, @Status, @Payout, @CreatedAt, @CompletedAt);
-   SELECT LAST_INSERT_ID();";
+    public async Task<int> AddAsync(BlackjackGame entity)
+        {
+   try
+      {
+                const string sql = @"
+       INSERT INTO BlackjackGames 
+          (UserId, BetAmount, PlayerCards, DealerCards, PlayerTotal, DealerTotal, Status, Payout, CreatedAt, CompletedAt)
+      VALUES 
+      (@UserId, @BetAmount, @PlayerCards, @DealerCards, @PlayerTotal, @DealerTotal, @Status, @Payout, @CreatedAt, @CompletedAt);
+    SELECT LAST_INSERT_ID();";
 
-      using var connection = _connectionFactory.CreateConnection();
-        var id = await connection.ExecuteScalarAsync<int>(sql, entity);
-   entity.Id = id;
+            var id = await _connection.ExecuteScalarAsync<int>(sql, entity);
+         entity.Id = id;
             return id;
+ }
+            catch (Exception ex)
+            {
+    _logger.LogError(ex, "Error adding blackjack game for user: {UserId}", entity.UserId);
+   throw;
+            }
         }
 
         public async Task<bool> UpdateAsync(BlackjackGame entity)
         {
-const string sql = @"
-    UPDATE BlackjackGames
-SET UserId = @UserId,
-       BetAmount = @BetAmount,
+         try
+            {
+ const string sql = @"
+     UPDATE BlackjackGames
+            SET UserId = @UserId,
+          BetAmount = @BetAmount,
        PlayerCards = @PlayerCards,
-       DealerCards = @DealerCards,
-    PlayerTotal = @PlayerTotal,
-     DealerTotal = @DealerTotal,
-         Status = @Status,
+     DealerCards = @DealerCards,
+             PlayerTotal = @PlayerTotal,
+    DealerTotal = @DealerTotal,
+  Status = @Status,
          Payout = @Payout,
-         CompletedAt = @CompletedAt
-           WHERE Id = @Id";
+ CompletedAt = @CompletedAt
+        WHERE Id = @Id";
 
-            using var connection = _connectionFactory.CreateConnection();
-      var rowsAffected = await connection.ExecuteAsync(sql, entity);
-            return rowsAffected > 0;
+         var rowsAffected = await _connection.ExecuteAsync(sql, entity);
+        return rowsAffected > 0;
+ }
+            catch (Exception ex)
+     {
+        _logger.LogError(ex, "Error updating blackjack game: {Id}", entity.Id);
+    throw;
         }
+  }
 
         public async Task<bool> DeleteAsync(int id)
-     {
-            const string sql = "DELETE FROM BlackjackGames WHERE Id = @Id";
-
-  using var connection = _connectionFactory.CreateConnection();
-      var rowsAffected = await connection.ExecuteAsync(sql, new { Id = id });
-return rowsAffected > 0;
-        }
-
- public async Task<IEnumerable<BlackjackGame>> GetGamesByUserIdAsync(int userId)
+        {
+  try
     {
-            const string sql = @"
-    SELECT Id, UserId, BetAmount, PlayerCards, DealerCards, 
-    PlayerTotal, DealerTotal, Status, Payout, CreatedAt, CompletedAt
-  FROM BlackjackGames
-          WHERE UserId = @UserId
- ORDER BY CreatedAt DESC";
-
-          using var connection = _connectionFactory.CreateConnection();
-   return await connection.QueryAsync<BlackjackGame>(sql, new { UserId = userId });
-        }
-
-        public async Task<BlackjackGame?> GetActiveGameAsync(int userId)
+         const string sql = "DELETE FROM BlackjackGames WHERE Id = @Id";
+        var rowsAffected = await _connection.ExecuteAsync(sql, new { Id = id });
+                return rowsAffected > 0;
+  }
+         catch (Exception ex)
    {
- const string sql = @"
-    SELECT Id, UserId, BetAmount, PlayerCards, DealerCards, 
-           PlayerTotal, DealerTotal, Status, Payout, CreatedAt, CompletedAt
-      FROM BlackjackGames
-     WHERE UserId = @UserId AND Status = 'Active'
-        LIMIT 1";
+             _logger.LogError(ex, "Error deleting blackjack game: {Id}", id);
+              throw;
+     }
+    }
 
-          using var connection = _connectionFactory.CreateConnection();
-     return await connection.QueryFirstOrDefaultAsync<BlackjackGame>(sql, new { UserId = userId });
+        public async Task<IEnumerable<BlackjackGame>> GetGamesByUserIdAsync(int userId)
+        {
+       try
+       {
+         const string sql = @"
+                    SELECT Id, UserId, BetAmount, PlayerCards, DealerCards, 
+              PlayerTotal, DealerTotal, Status, Payout, CreatedAt, CompletedAt
+           FROM BlackjackGames
+             WHERE UserId = @UserId
+               ORDER BY CreatedAt DESC";
+
+                return await _connection.QueryAsync<BlackjackGame>(sql, new { UserId = userId });
+      }
+            catch (Exception ex)
+      {
+       _logger.LogError(ex, "Error getting blackjack games for user: {UserId}", userId);
+  throw;
+            }
         }
+
+      public async Task<BlackjackGame?> GetActiveGameAsync(int userId)
+        {
+      try
+       {
+       const string sql = @"
+             SELECT Id, UserId, BetAmount, PlayerCards, DealerCards, 
+              PlayerTotal, DealerTotal, Status, Payout, CreatedAt, CompletedAt
+           FROM BlackjackGames
+          WHERE UserId = @UserId AND Status = 'Active'
+       LIMIT 1";
+
+     return await _connection.QueryFirstOrDefaultAsync<BlackjackGame>(sql, new { UserId = userId });
+      }
+   catch (Exception ex)
+       {
+     _logger.LogError(ex, "Error getting active game for user: {UserId}", userId);
+  throw;
+            }
+     }
 
         public async Task<IEnumerable<BlackjackGame>> GetCompletedGamesAsync(int userId, int limit = 10)
         {
-         const string sql = @"
-SELECT Id, UserId, BetAmount, PlayerCards, DealerCards, 
-  PlayerTotal, DealerTotal, Status, Payout, CreatedAt, CompletedAt
-      FROM BlackjackGames
+            try
+         {
+ const string sql = @"
+   SELECT Id, UserId, BetAmount, PlayerCards, DealerCards, 
+           PlayerTotal, DealerTotal, Status, Payout, CreatedAt, CompletedAt
+     FROM BlackjackGames
 WHERE UserId = @UserId AND CompletedAt IS NOT NULL
-         ORDER BY CompletedAt DESC
-         LIMIT @Limit";
+                    ORDER BY CompletedAt DESC
+   LIMIT @Limit";
 
- using var connection = _connectionFactory.CreateConnection();
-     return await connection.QueryAsync<BlackjackGame>(sql, new { UserId = userId, Limit = limit });
-   }
+             return await _connection.QueryAsync<BlackjackGame>(sql, new { UserId = userId, Limit = limit });
+    }
+          catch (Exception ex)
+            {
+  _logger.LogError(ex, "Error getting completed games for user: {UserId}", userId);
+    throw;
+     }
+        }
     }
 }

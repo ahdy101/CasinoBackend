@@ -2,6 +2,7 @@ using Casino.Backend.Data;
 using Casino.Backend.Models;
 using Casino.Backend.Repositories.Interfaces;
 using Dapper;
+using System.Data;
 
 namespace Casino.Backend.Repositories.Implementations
 {
@@ -9,141 +10,236 @@ namespace Casino.Backend.Repositories.Implementations
     /// Dapper-based repository for User using raw SQL
     /// </summary>
     public class UserRepository : IUserRepository
-    {
-    private readonly IDbConnectionFactory _connectionFactory;
-
-    public UserRepository(IDbConnectionFactory connectionFactory)
  {
-            _connectionFactory = connectionFactory;
+        private readonly IDbConnection _connection;
+        private readonly ILogger<UserRepository> _logger;
+
+    public UserRepository(IDbConnectionFactory connectionFactory, ILogger<UserRepository> logger)
+        {
+            _connection = connectionFactory.CreateConnection();
+  _logger = logger;
         }
 
         public async Task<User?> GetByIdAsync(int id)
         {
- const string sql = @"
-   SELECT Id, Username, Email, PasswordHash, Balance, Role, IsDeleted, CreatedAt, ModifiedAt, DeletedAt, TenantId
-      FROM Users
-   WHERE Id = @Id AND IsDeleted = 0";
+   try
+            {
+                const string sql = @"
+         SELECT Id, Username, Email, PasswordHash, Balance, Role, IsDeleted, CreatedAt, ModifiedAt, DeletedAt, TenantId
+     FROM Users
+           WHERE Id = @Id AND IsDeleted = 0";
 
- using var connection = _connectionFactory.CreateConnection();
-    return await connection.QueryFirstOrDefaultAsync<User>(sql, new { Id = id });
- }
-
-  public async Task<IEnumerable<User>> GetAllAsync()
-        {
-   const string sql = @"
-       SELECT Id, Username, Email, PasswordHash, Balance, Role, IsDeleted, CreatedAt, ModifiedAt, DeletedAt, TenantId
-        FROM Users
-        WHERE IsDeleted = 0
-      ORDER BY CreatedAt DESC";
-
-  using var connection = _connectionFactory.CreateConnection();
-    return await connection.QueryAsync<User>(sql);
-  }
-
-     public async Task<int> AddAsync(User entity)
-   {
-       const string sql = @"
-INSERT INTO Users (Username, Email, PasswordHash, Balance, Role, IsDeleted, CreatedAt, TenantId)
-VALUES (@Username, @Email, @PasswordHash, @Balance, @Role, @IsDeleted, @CreatedAt, @TenantId);
-  SELECT LAST_INSERT_ID();";
-
-     using var connection = _connectionFactory.CreateConnection();
-         var id = await connection.ExecuteScalarAsync<int>(sql, entity);
-    entity.Id = id;
-       return id;
- }
-
-    public async Task<bool> UpdateAsync(User entity)
-    {
-            entity.ModifiedAt = DateTime.UtcNow;
- 
-  const string sql = @"
-UPDATE Users
-   SET Username = @Username,
-      Email = @Email,
-PasswordHash = @PasswordHash,
-    Balance = @Balance,
-       Role = @Role,
-            ModifiedAt = @ModifiedAt,
-   TenantId = @TenantId
-     WHERE Id = @Id AND IsDeleted = 0";
-
- using var connection = _connectionFactory.CreateConnection();
-      var rowsAffected = await connection.ExecuteAsync(sql, entity);
-    return rowsAffected > 0;
+       return await _connection.QueryFirstOrDefaultAsync<User>(sql, new { Id = id });
+    }
+      catch (Exception ex)
+      {
+  _logger.LogError(ex, "Error getting user by ID: {Id}", id);
+  throw;
+            }
         }
 
-      public async Task<bool> DeleteAsync(int id)
+        public async Task<IEnumerable<User>> GetAllAsync()
         {
+            try
+      {
          const string sql = @"
-     UPDATE Users 
-       SET IsDeleted = 1, DeletedAt = @DeletedAt 
-        WHERE Id = @Id AND IsDeleted = 0";
+      SELECT Id, Username, Email, PasswordHash, Balance, Role, IsDeleted, CreatedAt, ModifiedAt, DeletedAt, TenantId
+                    FROM Users
+      WHERE IsDeleted = 0
+ORDER BY CreatedAt DESC";
 
-    using var connection = _connectionFactory.CreateConnection();
- var rowsAffected = await connection.ExecuteAsync(sql, new { Id = id, DeletedAt = DateTime.UtcNow });
-      return rowsAffected > 0;
-     }
+    return await _connection.QueryAsync<User>(sql);
+            }
+     catch (Exception ex)
+      {
+      _logger.LogError(ex, "Error getting all users");
+   throw;
+            }
+      }
 
-   public async Task<User?> GetByUsernameAsync(string username)
-   {
-      const string sql = @"
-     SELECT Id, Username, Email, PasswordHash, Balance, Role, IsDeleted, CreatedAt, ModifiedAt, DeletedAt, TenantId
-     FROM Users
-    WHERE Username = @Username AND IsDeleted = 0
+    public async Task<int> AddAsync(User entity)
+      {
+     try
+            {
+   const string sql = @"
+        INSERT INTO Users (Username, Email, PasswordHash, Balance, Role, IsDeleted, CreatedAt, ModifiedAt, TenantId)
+   VALUES (@Username, @Email, @PasswordHash, @Balance, @Role, @IsDeleted, @CreatedAt, @ModifiedAt, @TenantId);
+          SELECT LAST_INSERT_ID();";
+
+       var id = await _connection.ExecuteScalarAsync<int>(sql, entity);
+         entity.Id = id;
+     return id;
+        }
+            catch (Exception ex)
+     {
+       _logger.LogError(ex, "Error adding user: {Username}", entity.Username);
+                throw;
+   }
+        }
+
+     public async Task<bool> UpdateAsync(User entity)
+        {
+         try
+     {
+        entity.ModifiedAt = DateTime.UtcNow;
+
+   const string sql = @"
+ UPDATE Users
+ SET Username = @Username,
+      Email = @Email,
+        PasswordHash = @PasswordHash,
+             Balance = @Balance,
+    Role = @Role,
+               ModifiedAt = @ModifiedAt,
+           TenantId = @TenantId
+    WHERE Id = @Id AND IsDeleted = 0";
+
+    var rowsAffected = await _connection.ExecuteAsync(sql, entity);
+  return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+        _logger.LogError(ex, "Error updating user: {Id}", entity.Id);
+            throw;
+    }
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            try
+            {
+   const string sql = @"
+   UPDATE Users 
+        SET IsDeleted = 1, DeletedAt = @DeletedAt 
+       WHERE Id = @Id AND IsDeleted = 0";
+
+     var rowsAffected = await _connection.ExecuteAsync(sql, new { Id = id, DeletedAt = DateTime.UtcNow });
+            return rowsAffected > 0;
+          }
+       catch (Exception ex)
+            {
+        _logger.LogError(ex, "Error deleting user: {Id}", id);
+          throw;
+}
+        }
+
+      public async Task<User?> GetByUsernameAsync(string username)
+      {
+    try
+            {
+    const string sql = @"
+            SELECT Id, Username, Email, PasswordHash, Balance, Role, IsDeleted, CreatedAt, ModifiedAt, DeletedAt, TenantId
+             FROM Users
+            WHERE Username = @Username AND IsDeleted = 0
            LIMIT 1";
 
-   using var connection = _connectionFactory.CreateConnection();
-      return await connection.QueryFirstOrDefaultAsync<User>(sql, new { Username = username });
-  }
+      return await _connection.QueryFirstOrDefaultAsync<User>(sql, new { Username = username });
+ }
+       catch (Exception ex)
+      {
+            _logger.LogError(ex, "Error getting user by username: {Username}", username);
+                throw;
+   }
+        }
 
-        public async Task<bool> UsernameExistsAsync(string username)
+     public async Task<bool> UsernameExistsAsync(string username)
+      {
+          try
         {
-       const string sql = "SELECT COUNT(1) FROM Users WHERE Username = @Username AND IsDeleted = 0";
-
-  using var connection = _connectionFactory.CreateConnection();
-            var count = await connection.ExecuteScalarAsync<int>(sql, new { Username = username });
-            return count > 0;
+     const string sql = "SELECT COUNT(1) FROM Users WHERE Username = @Username AND IsDeleted = 0";
+      var count = await _connection.ExecuteScalarAsync<int>(sql, new { Username = username });
+     return count > 0;
+   }
+      catch (Exception ex)
+ {
+        _logger.LogError(ex, "Error checking username exists: {Username}", username);
+      throw;
+     }
         }
 
         public async Task<User?> GetByEmailAsync(string email)
-     {
-   const string sql = @"
-    SELECT Id, Username, Email, PasswordHash, Balance, Role, IsDeleted, CreatedAt, ModifiedAt, DeletedAt, TenantId
-     FROM Users
-       WHERE Email = @Email AND IsDeleted = 0
-                LIMIT 1";
+      {
+            try
+   {
+           const string sql = @"
+          SELECT Id, Username, Email, PasswordHash, Balance, Role, IsDeleted, CreatedAt, ModifiedAt, DeletedAt, TenantId
+       FROM Users
+    WHERE Email = @Email AND IsDeleted = 0
+             LIMIT 1";
 
-            using var connection = _connectionFactory.CreateConnection();
-     return await connection.QueryFirstOrDefaultAsync<User>(sql, new { Email = email });
+         return await _connection.QueryFirstOrDefaultAsync<User>(sql, new { Email = email });
+  }
+    catch (Exception ex)
+        {
+         _logger.LogError(ex, "Error getting user by email: {Email}", email);
+      throw;
+         }
         }
 
         public async Task<bool> EmailExistsAsync(string email)
+        {
+        try
+            {
+             const string sql = "SELECT COUNT(1) FROM Users WHERE Email = @Email AND IsDeleted = 0";
+        var count = await _connection.ExecuteScalarAsync<int>(sql, new { Email = email });
+    return count > 0;
+          }
+    catch (Exception ex)
     {
-            const string sql = "SELECT COUNT(1) FROM Users WHERE Email = @Email AND IsDeleted = 0";
-
-   using var connection = _connectionFactory.CreateConnection();
-            var count = await connection.ExecuteScalarAsync<int>(sql, new { Email = email });
-            return count > 0;
-        }
+           _logger.LogError(ex, "Error checking email exists: {Email}", email);
+           throw;
+            }
+   }
 
         public async Task<decimal> GetBalanceAsync(int userId)
-     {
-   const string sql = "SELECT Balance FROM Users WHERE Id = @UserId AND IsDeleted = 0";
-
-         using var connection = _connectionFactory.CreateConnection();
-    return await connection.ExecuteScalarAsync<decimal>(sql, new { UserId = userId });
-      }
-
-        public async Task UpdateBalanceAsync(int userId, decimal newBalance)
-        {
-            const string sql = @"
-          UPDATE Users 
-            SET Balance = @Balance, ModifiedAt = @ModifiedAt 
-       WHERE Id = @UserId AND IsDeleted = 0";
-
-    using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync(sql, new { UserId = userId, Balance = newBalance, ModifiedAt = DateTime.UtcNow });
+    {
+ try
+            {
+                const string sql = "SELECT Balance FROM Users WHERE Id = @UserId AND IsDeleted = 0";
+     return await _connection.ExecuteScalarAsync<decimal>(sql, new { UserId = userId });
+   }
+   catch (Exception ex)
+            {
+       _logger.LogError(ex, "Error getting balance for user: {UserId}", userId);
+ throw;
         }
     }
+
+ public async Task UpdateBalanceAsync(int userId, decimal newBalance)
+        {
+   try
+ {
+ const string sql = @"
+   UPDATE Users 
+    SET Balance = @Balance, ModifiedAt = @ModifiedAt 
+      WHERE Id = @UserId AND IsDeleted = 0";
+
+    await _connection.ExecuteAsync(sql, new { UserId = userId, Balance = newBalance, ModifiedAt = DateTime.UtcNow });
+    }
+         catch (Exception ex)
+ {
+        _logger.LogError(ex, "Error updating balance for user: {UserId}", userId);
+    throw;
+         }
+        }
+
+        public async Task<IEnumerable<User>> GetUsersByRoleAsync(string role)
+        {
+  try
+       {
+  const string sql = @"
+     SELECT Id, Username, Email, PasswordHash, Balance, Role, IsDeleted, CreatedAt, ModifiedAt, DeletedAt, TenantId
+              FROM Users
+       WHERE Role = @Role AND IsDeleted = 0
+          ORDER BY CreatedAt DESC";
+
+     return await _connection.QueryAsync<User>(sql, new { Role = role });
+            }
+     catch (Exception ex)
+            {
+    _logger.LogError(ex, "Error getting users by role: {Role}", role);
+                throw;
+  }
+        }
+ }
 }

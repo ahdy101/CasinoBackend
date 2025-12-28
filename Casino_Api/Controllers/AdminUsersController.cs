@@ -2,172 +2,105 @@ using Casino.Backend.Models;
 using Casino.Backend.Repositories.Interfaces;
 using Casino.Backend.DTOs.Requests;
 using Casino.Backend.DTOs.Responses;
+using Casino.Backend.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Casino.Backend.Controllers
 {
+ [Authorize(Roles = "Admin")]
  [ApiController]
  [Route("api/[controller]")]
  public class AdminUsersController : ControllerBase
  {
-  private readonly IAdminUserRepository _adminUserRepository;
-  private readonly ITenantApiKeyRepository _tenantApiKeyRepository;
+  private readonly IUserRepository _userRepository;
+  private readonly ILogger<AdminUsersController> _logger;
 
   public AdminUsersController(
-      IAdminUserRepository adminUserRepository,
-  ITenantApiKeyRepository tenantApiKeyRepository)
+      IUserRepository userRepository,
+      ILogger<AdminUsersController> logger)
   {
- _adminUserRepository = adminUserRepository;
- _tenantApiKeyRepository = tenantApiKeyRepository;
- }
-
- private async Task<bool> IsApiKeyValid(string apiKey)
- {
-  return await _tenantApiKeyRepository.ValidateApiKeyAsync(apiKey);
+ _userRepository = userRepository;
+ _logger = logger;
  }
 
  [HttpGet]
- public async Task<IActionResult> GetAll([FromQuery] string apiKey)
+ public async Task<IActionResult> GetAll()
  {
-   if (!await IsApiKeyValid(apiKey)) 
-       return Unauthorized("Invalid or missing API key.");
-     
- var admins = await _adminUserRepository.GetAllAsync();
-   var response = admins.Select(a => new AdminUserResponse
+ var users = await _userRepository.GetUsersByRoleAsync("Admin");
+   var response = users.Select(u => new UserResponse
  {
-Id = a.Id,
-     Username = a.Username,
-    Email = a.Email,
-    Role = a.Role,
-     CreatedAt = a.CreatedAt
+Id = u.Id,
+   Username = u.Username,
+    Email = u.Email,
+    Balance = u.Balance,
+  CreatedAt = u.CreatedAt
       });
  return Ok(response);
  }
 
  [HttpGet("{id}")]
- public async Task<IActionResult> Get(int id, [FromQuery] string apiKey)
+ public async Task<IActionResult> Get(int id)
  {
-  if (!await IsApiKeyValid(apiKey)) 
-    return Unauthorized("Invalid or missing API key.");
-      
- var admin = await _adminUserRepository.GetByIdAsync(id);
- if (admin == null) return NotFound();
-            
-   var response = new AdminUserResponse
+ var user = await _userRepository.GetByIdAsync(id);
+ if (user == null) return NotFound();
+
+   var etag = ETagHelper.GenerateETag(user.Id, user.ModifiedAt);
+   Response.Headers.Append("ETag", $"\"{etag}\"");
+ 
+   var response = new UserResponse
     {
-    Id = admin.Id,
-     Username = admin.Username,
-       Email = admin.Email,
-        Role = admin.Role,
-        CreatedAt = admin.CreatedAt
+    Id = user.Id,
+     Username = user.Username,
+       Email = user.Email,
+      Balance = user.Balance,
+    CreatedAt = user.CreatedAt
 };
  return Ok(response);
  }
 
- [HttpPost]
- public async Task<IActionResult> Create([FromBody] CreateAdminUserRequest request, [FromQuery] string apiKey)
- {
-  if (!await IsApiKeyValid(apiKey)) 
-    return Unauthorized("Invalid or missing API key.");
-
-          if (!ModelState.IsValid)
-        return BadRequest(ModelState);
-       
-    // Check if username already exists
-   var existingUser = await _adminUserRepository.GetByUsernameAsync(request.Username);
-       if (existingUser != null)
-    return BadRequest(new { message = "Username already exists" });
-
-        // Create admin user
-   var admin = new AdminUser
-   {
-   Username = request.Username,
-    Email = request.Email,
-  PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-Role = request.Role,
-CreatedAt = DateTime.UtcNow
-       };
- 
- await _adminUserRepository.AddAsync(admin);
-   
-var response = new AdminUserResponse
-     {
-            Id = admin.Id,
-     Username = admin.Username,
-  Email = admin.Email,
-   Role = admin.Role,
-          CreatedAt = admin.CreatedAt
-  };
-   
- return CreatedAtAction(nameof(Get), new { id = admin.Id, apiKey }, response);
- }
-
  [HttpPut("{id}")]
- public async Task<IActionResult> Update(int id, [FromBody] AdminUser admin, [FromQuery] string apiKey)
+ public async Task<IActionResult> Update(int id, [FromBody] UpdateProfileRequest request, [FromHeader(Name = "If-Match")] string ifMatch)
  {
-  if (!await IsApiKeyValid(apiKey)) 
-       return Unauthorized("Invalid or missing API key.");
-  
- if (id != admin.Id) return BadRequest();
+ if (string.IsNullOrWhiteSpace(ifMatch))
+      return BadRequest(new ErrorResponse { Message = "If-Match header required" });
+
+   var current = await _userRepository.GetByIdAsync(id);
+   if (current == null) return NotFound();
+
+   var currentETag = ETagHelper.GenerateETag(current.Id, current.ModifiedAt);
+   if (!ETagHelper.ValidateETag(ifMatch, currentETag))
+   return StatusCode(412, new ErrorResponse { Message = "Resource modified by another user" });
  
- // Hash password if not already hashed
- if (!admin.PasswordHash.StartsWith("$2a$") && !admin.PasswordHash.StartsWith("$2b$") && !admin.PasswordHash.StartsWith("$2y$"))
- {
- admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(admin.PasswordHash);
- }
- 
- await _adminUserRepository.UpdateAsync(admin);
+   if (!string.IsNullOrWhiteSpace(request.Username))
+ current.Username = request.Username;
+   if (!string.IsNullOrWhiteSpace(request.Email))
+      current.Email = request.Email;
+   
+ current.ModifiedAt = DateTime.UtcNow;
+ await _userRepository.UpdateAsync(current);
+
+   var newETag = ETagHelper.GenerateETag(current.Id, current.ModifiedAt);
+   Response.Headers.Append("ETag", $"\"{newETag}\"");
+
  return NoContent();
  }
 
  [HttpDelete("{id}")]
- public async Task<IActionResult> Delete(int id, [FromQuery] string apiKey)
+ public async Task<IActionResult> Delete(int id, [FromHeader(Name = "If-Match")] string ifMatch)
  {
-  if (!await IsApiKeyValid(apiKey)) 
-      return Unauthorized("Invalid or missing API key.");
+   if (string.IsNullOrWhiteSpace(ifMatch))
+      return BadRequest(new ErrorResponse { Message = "If-Match header required" });
       
- var admin = await _adminUserRepository.GetByIdAsync(id);
- if (admin == null) return NotFound();
+ var user = await _userRepository.GetByIdAsync(id);
+ if (user == null) return NotFound();
+
+   var currentETag = ETagHelper.GenerateETag(user.Id, user.ModifiedAt);
+   if (!ETagHelper.ValidateETag(ifMatch, currentETag))
+      return StatusCode(412, new ErrorResponse { Message = "Resource modified by another user" });
  
- await _adminUserRepository.DeleteAsync(id);
+ await _userRepository.DeleteAsync(id);
  return NoContent();
  }
-
-        /// <summary>
-        /// Restore a soft-deleted admin user
-      /// </summary>
-    [HttpPost("{id}/restore")]
-        public async Task<IActionResult> Restore(int id, [FromQuery] string apiKey)
-        {
-            if (!await IsApiKeyValid(apiKey))
- return Unauthorized("Invalid or missing API key.");
-
-            var restored = await _adminUserRepository.RestoreAsync(id);
-       if (!restored)
-     return NotFound(new { message = "Admin user not found or already active" });
-
-    return Ok(new { message = "Admin user restored successfully" });
-        }
-
-        /// <summary>
-  /// Get all admin users including soft-deleted ones
-        /// </summary>
-        [HttpGet("all-including-deleted")]
-        public async Task<IActionResult> GetAllIncludingDeleted([FromQuery] string apiKey)
-        {
-            if (!await IsApiKeyValid(apiKey))
-     return Unauthorized("Invalid or missing API key.");
-
-   var admins = await _adminUserRepository.GetAllIncludingDeletedAsync();
-            var response = admins.Select(a => new AdminUserResponse
-            {
-          Id = a.Id,
-      Username = a.Username,
-        Email = a.Email,
-   Role = a.Role,
-                CreatedAt = a.CreatedAt
-        });
- return Ok(response);
-        }
  }
 }

@@ -67,12 +67,12 @@ namespace Casino.Backend.Services
                 throw new Exception("Invalid credentials");
             }
 
-            // Create JWT
+            // Create JWT with role claim
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? string.Empty);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), new Claim(ClaimTypes.Name, user.Username) }),
+                Subject = new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), new Claim(ClaimTypes.Name, user.Username), new Claim(ClaimTypes.Role, user.Role) }),
                 Expires = DateTime.UtcNow.AddMinutes(double.Parse(_config["Jwt:ExpireMinutes"] ?? "120")),
                 Issuer = _config["Jwt:Issuer"],
                 Audience = _config["Jwt:Audience"],
@@ -80,7 +80,7 @@ namespace Casino.Backend.Services
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
 
-            _logger.LogInformation("LoginAsync successful - UserId: {UserId}", user.Id);
+            _logger.LogInformation("LoginAsync successful - UserId: {UserId}, Role: {Role}", user.Id, user.Role);
             return tokenHandler.WriteToken(token);
         }
 
