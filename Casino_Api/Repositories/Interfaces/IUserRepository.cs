@@ -14,5 +14,7 @@ namespace Casino.Backend.Repositories.Interfaces
         Task<decimal> GetBalanceAsync(int userId);
       Task UpdateBalanceAsync(int userId, decimal newBalance);
         Task<IEnumerable<User>> GetUsersByRoleAsync(string role);
- }
+        Task<IEnumerable<User>> GetActiveUsersAsync(int minutesThreshold = 15);
+      Task UpdateLastActivityAsync(int userId);
+    }
 }

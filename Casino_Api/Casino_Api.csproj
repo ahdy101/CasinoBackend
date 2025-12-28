@@ -25,7 +25,6 @@
 
   <ItemGroup>
     <Folder Include="CasinoProject\Casino_Api\" />
-    <Folder Include="Casino_Api\Controllers\" />
   </ItemGroup>
 
 </Project>

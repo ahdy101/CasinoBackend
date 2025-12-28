@@ -1,12 +1,13 @@
 using Casino.Backend.Data;
-using Casino.Backend.Infrastructure;
-using Casino.Backend.Services;
-using Casino.Backend.Services.Implementations;
-using Casino.Backend.Services.Interfaces;
-using Casino.Backend.Repositories.Interfaces;
+using Casino.Backend.Models;
 using Casino.Backend.Repositories.Implementations;
+using Casino.Backend.Repositories.Interfaces;
+using Casino.Backend.Services;
+using Casino.Backend.Services.Interfaces;
+using Casino.Backend.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -59,13 +60,6 @@ builder.Services.AddAuthentication(options =>
 
 // Register Services - Service Layer
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IWalletService, WalletService>();
-builder.Services.AddScoped<IBlackjackEngine, BlackjackEngine>();
-builder.Services.AddScoped<IRouletteEngine, RouletteEngine>();
-
-// Register Infrastructure Services
-builder.Services.AddSingleton<IRandomNumberGenerator, CryptoRNG>();
-builder.Services.AddSingleton<ICardDeckFactory, CardDeckFactory>();
 
 // Add CORS for frontend applications
 builder.Services.AddCors(options =>
@@ -152,5 +146,9 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Track user activity on every authenticated request
+app.UseMiddleware<ActivityTrackingMiddleware>();
+
 app.MapControllers();
 app.Run();

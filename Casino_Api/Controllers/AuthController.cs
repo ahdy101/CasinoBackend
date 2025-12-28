@@ -8,9 +8,6 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Casino.Backend.Controllers
 {
-    /// <summary>
-    /// Authentication controller for user registration and login
-    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     [Produces("application/json")]
@@ -277,24 +274,24 @@ catch (Exception ex)
         [HttpPost("reset-password")]
  [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
   {
-       if (!ModelState.IsValid)
+     if (!ModelState.IsValid)
       {
      return BadRequest(new ErrorResponse
        {
       Message = "Validation failed",
-              Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList()
+      Errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList()
       });
   }
 
 try
   {
-       var success = await _authService.ResetPasswordAsync(request.Token, request.NewPassword);
+   var success = await _authService.ResetPasswordAsync(request.Token, request.NewPassword);
       
         if (!success)
        {
-       return BadRequest(new ErrorResponse
+    return BadRequest(new ErrorResponse
         {
       Message = "Invalid or expired reset token",
     Errors = new List<string> { "The password reset link is invalid or has expired. Please request a new one." }
@@ -304,49 +301,30 @@ try
    _logger.LogInformation("Password reset successful");
        return Ok(new { message = "Password reset successfully. You can now login with your new password." });
 }
-       catch (Exception ex)
+    catch (Exception ex)
   {
-      _logger.LogError(ex, "Error resetting password");
+_logger.LogError(ex, "Error resetting password");
       return BadRequest(new ErrorResponse 
  { 
     Message = "An error occurred while resetting password",
   Errors = new List<string> { ex.Message }
    });
   }
-        }
+      }
     }
 
-    /// <summary>
-    /// Login request model
-  /// </summary>
     public class LoginRequest
     {
-        /// <summary>
-        /// Username
-        /// </summary>
         [System.ComponentModel.DataAnnotations.Required]
- public string Username { get; set; } = string.Empty;
+      public string Username { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Password
-        /// </summary>
-   [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.Required]
         public string Password { get; set; } = string.Empty;
- }
+    }
 
-    /// <summary>
-    /// Login response with JWT token
-    /// </summary>
     public class LoginResponse
     {
-        /// <summary>
-        /// JWT token for authentication
-        /// </summary>
         public string Token { get; set; } = string.Empty;
-
-  /// <summary>
-        /// Username
-     /// </summary>
-        public string Username { get; set; } = string.Empty;
-    }
+     public string Username { get; set; } = string.Empty;
+ }
 }
