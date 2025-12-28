@@ -124,3 +124,14 @@ npm-debug.log*
 
 # SECURITY: User secrets
 secrets.json
+**/TEST_CREDENTIALS*.txt
+**/CREDENTIALS*.txt
+
+# HTTP request files (may contain sensitive endpoints/keys)
+*.http
+
+# Temporary documentation and fix files
+**/*_SUMMARY.txt
+**/*_GUIDE.txt
+**/*_FIX*.txt
+**/*_REFERENCE*.txt
