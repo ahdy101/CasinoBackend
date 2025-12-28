@@ -38,6 +38,7 @@ namespace Casino.Backend.Services
             }
 
             var hash = BCrypt.Net.BCrypt.HashPassword(password);
+            var now = DateTime.UtcNow;
             var user = new User
             {
                 Username = username,
@@ -45,7 +46,8 @@ namespace Casino.Backend.Services
                 PasswordHash = hash,
                 Balance = 10000m,
                 Role = "Player",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = now,
+                ModifiedAt = now
             };
 
             await _userRepository.AddAsync(user);
@@ -220,7 +222,11 @@ public async Task<bool> ResetPasswordAsync(string token, string newPassword)
             }
 
             if (!string.IsNullOrWhiteSpace(newEmail) && newEmail != user.Email)
+            {
+                if (await _userRepository.EmailExistsAsync(newEmail))
+                    throw new Exception("Email already taken");
                 user.Email = newEmail;
+            }
 
             user.ModifiedAt = DateTime.UtcNow;
             await _userRepository.UpdateAsync(user);

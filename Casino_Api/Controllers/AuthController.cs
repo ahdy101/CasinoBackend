@@ -1,8 +1,10 @@
 using Casino.Backend.DTOs.Requests;
 using Casino.Backend.DTOs.Responses;
 using Casino.Backend.Services.Interfaces;
+using Casino.Backend.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Casino.Backend.Controllers
 {
@@ -142,17 +144,25 @@ Balance = user.Balance,
 
         var user = await _authService.GetUserByIdAsync(userId);
     
-            if (user == null)
-            {
+      if (user == null)
+   {
   return NotFound(new ErrorResponse
-         {
-      Message = "User not found",
+      {
+  Message = "User not found",
        Errors = new List<string> { "User account may have been deleted" }
     });
    }
 
-            var response = new UserResponse
-            {
+   // Log ModifiedAt value for debugging
+   _logger.LogInformation("WhoAmI - UserId: {UserId}, ModifiedAt: {ModifiedAt}", user.Id, user.ModifiedAt);
+
+   // Generate and add ETag to response headers
+   var etag = ETagHelper.GenerateETag(user.Id, user.ModifiedAt);
+   _logger.LogInformation("WhoAmI - Generated ETag: {ETag}", etag);
+ Response.Headers.Append("ETag", $"\"{etag}\"");
+
+         var response = new UserResponse
+    {
   Id = user.Id,
      Username = user.Username,
   Email = user.Email,
@@ -169,26 +179,49 @@ Balance = user.Balance,
    /// Update user profile (username, email) - Requires JWT
         /// </summary>
         [Authorize]
- [HttpPut("profile")]
-     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
+        [HttpPut("profile")]
+        [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
-     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
-        {
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status412PreconditionFailed)]
+        [SwaggerOperation(Summary = "Update user profile", Description = "Requires ETag in If-Match header from GET /api/auth/whoami")]
+        public async Task<IActionResult> UpdateProfile(
+    [FromBody] UpdateProfileRequest request,
+       [FromHeader(Name = "If-Match")] string ifMatch)
+  {
    var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
    if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
-  return Unauthorized(new ErrorResponse { Message = "Invalid token" });
+          return Unauthorized(new ErrorResponse { Message = "Invalid token" });
 
-            try
-      {
-var user = await _authService.UpdateProfileAsync(userId, request.Username, request.Email);
-      return Ok(new UserResponse { Id = user.Id, Username = user.Username, Email = user.Email, Balance = user.Balance, CreatedAt = user.CreatedAt });
-     }
-     catch (Exception ex)
- {
-      _logger.LogError(ex, "Error updating profile");
-      return BadRequest(new ErrorResponse { Message = ex.Message });
-    }
-}
+   if (string.IsNullOrWhiteSpace(ifMatch))
+      return BadRequest(new ErrorResponse { Message = "If-Match header required" });
+
+      try
+     {
+     var currentUser = await _authService.GetUserByIdAsync(userId);
+    if (currentUser == null)
+     return NotFound(new ErrorResponse { Message = "User not found" });
+
+  var currentETag = ETagHelper.GenerateETag(currentUser.Id, currentUser.ModifiedAt);
+       
+       _logger.LogInformation("ETag Validation - Received: '{ReceivedETag}', Expected: '{ExpectedETag}', ModifiedAt: {ModifiedAt}", 
+           ifMatch, currentETag, currentUser.ModifiedAt);
+       
+       if (!ETagHelper.ValidateETag(ifMatch, currentETag))
+      return StatusCode(412, new ErrorResponse { Message = $"Resource modified by another user. Received ETag: {ifMatch}, Expected: {currentETag}" });
+
+      var user = await _authService.UpdateProfileAsync(userId, request.Username, request.Email);
+    
+  var newETag = ETagHelper.GenerateETag(user.Id, user.ModifiedAt);
+    Response.Headers.Append("ETag", $"\"{newETag}\"");
+
+  return Ok(new UserResponse { Id = user.Id, Username = user.Username, Email = user.Email, Balance = user.Balance, CreatedAt = user.CreatedAt });
+       }
+  catch (Exception ex)
+         {
+       _logger.LogError(ex, "Error updating profile");
+       return BadRequest(new ErrorResponse { Message = ex.Message });
+            }
+        }
 
         /// <summary>
   /// Change password - Requires JWT and current password

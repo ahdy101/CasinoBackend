@@ -106,6 +106,27 @@ PasswordHash = @PasswordHash,
             return count > 0;
         }
 
+        public async Task<User?> GetByEmailAsync(string email)
+     {
+   const string sql = @"
+    SELECT Id, Username, Email, PasswordHash, Balance, Role, IsDeleted, CreatedAt, ModifiedAt, DeletedAt, TenantId
+     FROM Users
+       WHERE Email = @Email AND IsDeleted = 0
+                LIMIT 1";
+
+            using var connection = _connectionFactory.CreateConnection();
+     return await connection.QueryFirstOrDefaultAsync<User>(sql, new { Email = email });
+        }
+
+        public async Task<bool> EmailExistsAsync(string email)
+    {
+            const string sql = "SELECT COUNT(1) FROM Users WHERE Email = @Email AND IsDeleted = 0";
+
+   using var connection = _connectionFactory.CreateConnection();
+            var count = await connection.ExecuteScalarAsync<int>(sql, new { Email = email });
+            return count > 0;
+        }
+
         public async Task<decimal> GetBalanceAsync(int userId)
      {
    const string sql = "SELECT Balance FROM Users WHERE Id = @UserId AND IsDeleted = 0";
