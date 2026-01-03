@@ -88,53 +88,17 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    // API Documentation
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "Casino Backend API",
- Version = "v1",
-        Description = "Casino gaming platform with Blackjack, Roulette, and wallet management. Auth endpoints are public. Game endpoints require JWT Bearer token + API key.",
-     Contact = new Microsoft.OpenApi.Models.OpenApiContact
-        {
-    Name = "Casino Backend Support",
-            Email = "support@casino.com"
-        }
-    });
-
-    // JWT Bearer Authentication for Swagger UI
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-    {
-        Description = "JWT Authorization header using the Bearer scheme. Get your token from POST /api/auth/login, then enter: Bearer {your_token}",
-     Name = "Authorization",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-     Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-      Scheme = "bearer",
-      BearerFormat = "JWT"
-});
-
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-    {
-        {
-    new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-     {
-          Reference = new Microsoft.OpenApi.Models.OpenApiReference
-        {
-           Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
- Id = "Bearer"
-    }
-         },
-   Array.Empty<string>()
-        }
-    });
-
     // Clean schema IDs to avoid conflicts
     options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
     
     // Support nullable reference types
-  options.SupportNonNullableReferenceTypes();
+    options.SupportNonNullableReferenceTypes();
     
     // Use data annotations for descriptions
     options.UseInlineDefinitionsForEnums();
+    
+    // Enable annotations support
+    options.EnableAnnotations();
 });
 
 var app = builder.Build();

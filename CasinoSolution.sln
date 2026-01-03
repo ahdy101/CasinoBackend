@@ -3,10 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Casino_Admin", "Casino_Admin", "{F797D927-D746-2FFA-04A7-13882B2162E9}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Casino.WebApp", "Casino_Admin\Casino.WebApp.csproj", "{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Casino_Api", "Casino_Api", "{AED68C8E-852C-B975-5DA5-366F6C82B0D2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Casino.Backend", "Casino_Api\Casino.Backend.csproj", "{AC8CCE48-C783-4ECB-90FA-75B265BFA489}"
@@ -21,18 +17,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}.Debug|x64.Build.0 = Debug|Any CPU
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}.Debug|x86.Build.0 = Debug|Any CPU
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}.Release|x64.ActiveCfg = Release|Any CPU
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}.Release|x64.Build.0 = Release|Any CPU
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}.Release|x86.ActiveCfg = Release|Any CPU
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895}.Release|x86.Build.0 = Release|Any CPU
 		{AC8CCE48-C783-4ECB-90FA-75B265BFA489}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AC8CCE48-C783-4ECB-90FA-75B265BFA489}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AC8CCE48-C783-4ECB-90FA-75B265BFA489}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -50,7 +34,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{8A64E6D8-7BE5-4A6C-A128-AAFF73664895} = {F797D927-D746-2FFA-04A7-13882B2162E9}
 		{AC8CCE48-C783-4ECB-90FA-75B265BFA489} = {AED68C8E-852C-B975-5DA5-366F6C82B0D2}
 	EndGlobalSection
 EndGlobal
