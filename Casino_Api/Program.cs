@@ -4,6 +4,7 @@ using Casino.Backend.Repositories.Implementations;
 using Casino.Backend.Repositories.Interfaces;
 using Casino.Backend.Services;
 using Casino.Backend.Services.Interfaces;
+using Casino.Backend.Services.Implementations;
 using Casino.Backend.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -23,6 +24,8 @@ builder.Services.AddScoped<IBlackjackGameRepository, BlackjackGameRepository>();
 builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
 builder.Services.AddScoped<ITenantApiKeyRepository, TenantApiKeyRepository>();
 builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+builder.Services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
 // JWT Auth - Validate configuration
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -60,6 +63,8 @@ builder.Services.AddAuthentication(options =>
 
 // Register Services - Service Layer
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IWalletService, WalletService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 // Add CORS for frontend applications
 builder.Services.AddCors(options =>
@@ -106,8 +111,17 @@ var app = builder.Build();
 // Enable CORS before authentication
 app.UseCors("AllowFrontend");
 
+// Serve static files (for swagger-auth-inject.js)
+app.UseStaticFiles();
+
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Casino API v1");
+
+    // Inject custom JavaScript to add Authorization field to all endpoints
+    c.InjectJavascript("/swagger-auth-inject.js");
+});
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -1,4 +1,6 @@
-﻿namespace Casino.Backend.Models
+﻿using Casino.Backend.Enums;
+
+namespace Casino.Backend.Models
 {
     public class User
     {
