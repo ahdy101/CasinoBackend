@@ -36,6 +36,14 @@ public interface IWalletService
  /// <param name="amount">Amount to add</param>
       /// <returns>Transaction result</returns>
       Task<WalletTransactionResult> AddFunds(int userId, decimal amount);
+
+        /// <summary>
+        /// Update user's balance directly (for game operations)
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <param name="newBalance">New balance amount</param>
+        /// <returns>True if update was successful, false otherwise</returns>
+        Task<bool> UpdateBalanceAsync(int userId, decimal newBalance);
     }
 
     /// <summary>

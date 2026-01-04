@@ -207,7 +207,7 @@ await _betRepository.UpdatePayoutAsync(betId, payoutAmount);
    /// Add funds to user's wallet (for admin purposes or bonuses)
         /// </summary>
 public async Task<WalletTransactionResult> AddFunds(int userId, decimal amount)
-     {
+        {
          using var connection = _connectionFactory.CreateConnection();
             await connection.OpenAsync();
   using var transaction = await connection.BeginTransactionAsync();
@@ -261,6 +261,30 @@ if (user == null)
       _logger.LogError(ex, "AddFunds failed - UserId: {UserId}, Amount: {Amount}", userId, amount);
          return WalletTransactionResult.Error($"Transaction failed: {ex.Message}");
       }
+        }
+
+        /// <summary>
+        /// Update user's balance directly (for game operations)
+        /// </summary>
+  public async Task<bool> UpdateBalanceAsync(int userId, decimal newBalance)
+    {
+            try
+  {
+           var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+  return false;
+
+         user.Balance = newBalance;
+    await _userRepository.UpdateAsync(user);
+      
+    _logger.LogInformation("UpdateBalanceAsync - UserId: {UserId}, NewBalance: {Balance}", userId, newBalance);
+  return true;
+            }
+        catch (Exception ex)
+            {
+           _logger.LogError(ex, "UpdateBalanceAsync failed - UserId: {UserId}", userId);
+      return false;
+   }
         }
     }
 }

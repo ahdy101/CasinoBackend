@@ -4,6 +4,7 @@ using Casino.Backend.Services.Interfaces;
 using Casino.Backend.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Casino.Backend.Controllers
@@ -14,21 +15,23 @@ namespace Casino.Backend.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
-      private readonly ILogger<AuthController> _logger;
+        private readonly ILogger<AuthController> _logger;
 
         public AuthController(IAuthService authService, ILogger<AuthController> logger)
         {
-       _authService = authService;
-         _logger = logger;
+_authService = authService;
+        _logger = logger;
         }
 
         /// <summary>
-    /// Register a new user - No API key required
-      /// </summary>
+        /// Register a new user - No API key required
+  /// </summary>
         [HttpPost("register")]
+  [EnableRateLimiting("auth")]  // Stricter rate limit for auth
         [ProducesResponseType(typeof(UserResponse), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> Register([FromBody] CreateUserRequest request)
         {
     if (!ModelState.IsValid)
@@ -82,10 +85,12 @@ Balance = user.Balance,
    /// <summary>
         /// Login and receive JWT token - No API key required
         /// </summary>
-        [HttpPost("login")]
+     [HttpPost("login")]
+        [EnableRateLimiting("auth")]  // Stricter rate limit for auth
         [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
-   [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+  [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             if (!ModelState.IsValid)
@@ -257,7 +262,9 @@ _logger.LogError(ex, "Error changing password");
         /// Forgot password - Sends reset email (public endpoint)
      /// </summary>
   [HttpPost("forgot-password")]
+        [EnableRateLimiting("auth")]  // Prevent email enumeration
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
   try
@@ -276,10 +283,12 @@ catch (Exception ex)
  /// Reset password using token from email (public endpoint)
      /// </summary>
         [HttpPost("reset-password")]
- [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
-  {
+        [EnableRateLimiting("auth")]
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+ [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+     {
      if (!ModelState.IsValid)
       {
      return BadRequest(new ErrorResponse

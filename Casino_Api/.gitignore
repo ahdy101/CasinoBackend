@@ -1,6 +1,36 @@
 # SECURITY: Sensitive configuration files
-**/appsettings.json
-!**/appsettings.Development.json
-!**/appsettings.EXAMPLE.json
-# Note: appsettings.Production.json should never be committed
+# Production settings should NEVER be committed
+appsettings.Production.json
 **/appsettings.Production.json
+
+# Keep these in version control (development values only)
+# appsettings.json - base config (no secrets in production)
+# appsettings.Development.json - dev secrets only
+
+# User secrets (local machine only)
+secrets.json
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Build artifacts
+bin/
+obj/
+*.user
+*.suo
+*.cache
+
+# IDE
+.vs/
+.idea/
+*.swp
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

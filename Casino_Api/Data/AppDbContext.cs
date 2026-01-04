@@ -11,7 +11,8 @@ namespace Casino.Backend.Data
         public DbSet<Bet> Bets { get; set; }
         public DbSet<TenantApiKey> TenantApiKeys { get; set; }
         public DbSet<AdminUser> AdminUsers { get; set; }
-        public DbSet<BlackjackGame> BlackjackGames { get; set; }
+        public DbSet<GameSession> GameSessions { get; set; }
+        public DbSet<GameRound> GameRounds { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -20,11 +21,23 @@ namespace Casino.Backend.Data
             modelBuilder.Entity<AdminUser>().HasIndex(a => a.Username).IsUnique();
 
             // Relationships
-            modelBuilder.Entity<BlackjackGame>()
-         .HasOne(bg => bg.User)
-       .WithMany()
-          .HasForeignKey(bg => bg.UserId)
-           .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<GameSession>()
+                .HasOne(gs => gs.User)
+                .WithMany()
+                .HasForeignKey(gs => gs.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GameRound>()
+                .HasOne(gr => gr.User)
+                .WithMany()
+                .HasForeignKey(gr => gr.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GameRound>()
+                .HasOne(gr => gr.Session)
+                .WithMany()
+                .HasForeignKey(gr => gr.SessionId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }
