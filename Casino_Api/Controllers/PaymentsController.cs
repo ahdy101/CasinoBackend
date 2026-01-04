@@ -34,7 +34,7 @@ namespace Casino.Backend.Controllers
     [ProducesResponseType(typeof(PaymentResponseDto), StatusCodes.Status200OK)]
  [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
  public async Task<IActionResult> CreateDeposit(
-  [FromHeader(Name = "Authorization")] string? authorization,
+  [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization,
             [FromBody] CreateDepositRequest request)
         {
  var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -100,7 +100,7 @@ Message = result.Message
         [ProducesResponseType(typeof(PaymentResponseDto), StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateWithdrawal(
-   [FromHeader(Name = "Authorization")] string? authorization,
+   [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization,
    [FromBody] CreateWithdrawalRequest request)
     {
 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -141,12 +141,12 @@ Success = true,
 
     /// <summary>
         /// Get payment history
-  /// </summary>
- [HttpGet("history")]
- [ProducesResponseType(typeof(List<PaymentDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetPaymentHistory(
-[FromHeader(Name = "Authorization")] string? authorization,
- [FromQuery] PaymentType? type = null)
+        /// </summary>
+        [HttpGet("history")]
+        [ProducesResponseType(typeof(List<PaymentDto>), StatusCodes.Status200OK)]
+ public async Task<IActionResult> GetPaymentHistory(
+   [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization,
+            [FromQuery] PaymentType? type = null)
         {
       var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
      var payments = await _paymentService.GetUserPaymentsAsync(userId, type);
@@ -175,8 +175,8 @@ Success = true,
         [HttpGet("{paymentId}")]
  [ProducesResponseType(typeof(PaymentDto), StatusCodes.Status200OK)]
  [ProducesResponseType(StatusCodes.Status404NotFound)]
- public async Task<IActionResult> GetPayment(
- [FromHeader(Name = "Authorization")] string? authorization,
+        public async Task<IActionResult> GetPayment(
+   [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization,
    int paymentId)
         {
   var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -211,8 +211,8 @@ Type = payment.Type.ToString(),
   [HttpPost("{paymentId}/cancel")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-      public async Task<IActionResult> CancelPayment(
-   [FromHeader(Name = "Authorization")] string? authorization,
+ public async Task<IActionResult> CancelPayment(
+        [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization,
 int paymentId)
       {
    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);

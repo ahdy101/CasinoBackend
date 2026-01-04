@@ -38,27 +38,27 @@ if (string.IsNullOrWhiteSpace(jwtKey))
 if (jwtKey.Length < 32)
 {
     throw new InvalidOperationException(
-     $"JWT Key must be at least 32 characters long. Current length: {jwtKey.Length}");
+        $"JWT Key must be at least 32 characters long. Current length: {jwtKey.Length}");
 }
 
 var keyBytes = System.Text.Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
 {
- options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
- options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
- options.TokenValidationParameters = new TokenValidationParameters
- {
- ValidateIssuer = true,
- ValidateAudience = true,
- ValidateIssuerSigningKey = true,
- ValidIssuer = builder.Configuration["Jwt:Issuer"],
- ValidAudience = builder.Configuration["Jwt:Audience"],
- IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
- };
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+    ValidAudience = builder.Configuration["Jwt:Audience"],
+      IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
+    };
 });
 
 // Register Services - Service Layer
@@ -70,31 +70,31 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
- {
+    {
         policy.WithOrigins(
-    "http://localhost:3000",// React default
-            "http://localhost:5173",   // Vite default
-    "http://localhost:4200",   // Angular default
-   "http://localhost:8080"    // Vue default
+        "http://localhost:3000",   // React default
+     "http://localhost:5173",   // Vite default
+   "http://localhost:4200",   // Angular default
+            "http://localhost:8080"    // Vue default
         )
         .AllowAnyHeader()
-        .AllowAnyMethod()
+     .AllowAnyMethod()
         .AllowCredentials();
     });
 });
 
 builder.Services.AddControllers()
-  .AddJsonOptions(options =>
+    .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-  options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    // Clean schema IDs to avoid conflicts
-    options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+ // Clean schema IDs to avoid conflicts
+options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
     
     // Support nullable reference types
     options.SupportNonNullableReferenceTypes();
@@ -104,6 +104,32 @@ builder.Services.AddSwaggerGen(options =>
     
     // Enable annotations support
     options.EnableAnnotations();
+
+    // Add Bearer token authorization using Swashbuckle's built-in support
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Enter your token in the text input below.\n\nExample: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        Name = "Authorization",
+   In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+Scheme = "bearer",
+        BearerFormat = "JWT"
+ });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+         new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+   {
+    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+ {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+        Id = "Bearer"
+         }
+     },
+            Array.Empty<string>()
+   }
+    });
 });
 
 var app = builder.Build();
@@ -118,10 +144,8 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Casino API v1");
-
-    // Inject custom JavaScript to add Authorization field to all endpoints
-    c.InjectJavascript("/swagger-auth-inject.js");
 });
+
 app.UseAuthentication();
 app.UseAuthorization();
 

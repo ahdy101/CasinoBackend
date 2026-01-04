@@ -32,11 +32,12 @@ namespace Casino.Backend.Controllers
   }
 
         /// <summary>
-/// Get current wallet balance
-     /// </summary>
-   [HttpGet("balance")]
- [ProducesResponseType(typeof(BalanceResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetBalance([FromHeader(Name = "Authorization")] string? authorization)
+        /// Get current wallet balance
+        /// </summary>
+     [HttpGet("balance")]
+        [ProducesResponseType(typeof(BalanceResponse), StatusCodes.Status200OK)]
+     public async Task<IActionResult> GetBalance(
+      [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization)
         {
        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
       var balance = await _walletService.GetBalance(userId);
@@ -55,10 +56,10 @@ return Ok(new BalanceResponse
       [HttpGet("transactions")]
         [ProducesResponseType(typeof(TransactionHistoryResponse), StatusCodes.Status200OK)]
       public async Task<IActionResult> GetTransactions(
-            [FromHeader(Name = "Authorization")] string? authorization,
- [FromQuery] int page = 1,
+            [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization,
+  [FromQuery] int page = 1,
   [FromQuery] int pageSize = 20,
-  [FromQuery] WalletTransactionType? type = null)
+      [FromQuery] WalletTransactionType? type = null)
         {
      var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
@@ -103,11 +104,11 @@ Page = page,
    /// <summary>
         /// Get recent transactions (last 10)
     /// </summary>
-[HttpGet("transactions/recent")]
-        [ProducesResponseType(typeof(List<TransactionDto>), StatusCodes.Status200OK)]
-      public async Task<IActionResult> GetRecentTransactions(
-  [FromHeader(Name = "Authorization")] string? authorization,
-    [FromQuery] int count = 10)
+   [HttpGet("transactions/recent")]
+   [ProducesResponseType(typeof(List<TransactionDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetRecentTransactions(
+   [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization,
+   [FromQuery] int count = 10)
   {
         var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var transactions = await _walletTransactionRepository.GetRecentTransactionsAsync(userId, count);
@@ -133,7 +134,8 @@ Page = page,
 /// </summary>
   [HttpGet("statistics")]
   [ProducesResponseType(typeof(WalletStatsResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetStatistics([FromHeader(Name = "Authorization")] string? authorization)
+        public async Task<IActionResult> GetStatistics(
+            [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization)
   {
        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
     var stats = await _walletTransactionRepository.GetUserStatsAsync(userId);
@@ -159,7 +161,7 @@ Page = page,
   [ProducesResponseType(typeof(WalletOperationResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> AddFunds(
-  [FromHeader(Name = "Authorization")] string? authorization,
+  [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization,
           [FromBody] AddFundsRequest request)
   {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -194,9 +196,9 @@ Page = page,
         [HttpGet("transactions/by-date")]
    [ProducesResponseType(typeof(List<TransactionDto>), StatusCodes.Status200OK)]
    public async Task<IActionResult> GetTransactionsByDateRange(
-   [FromHeader(Name = "Authorization")] string? authorization,
+   [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization,
      [FromQuery] DateTime from,
- [FromQuery] DateTime to)
+        [FromQuery] DateTime to)
     {
     var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var transactions = await _walletTransactionRepository.GetByUserIdAndDateRangeAsync(userId, from, to);

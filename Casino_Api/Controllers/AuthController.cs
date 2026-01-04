@@ -122,12 +122,13 @@ Balance = user.Balance,
 
         /// <summary>
         /// Get current authenticated user information
-   /// </summary>
+        /// </summary>
         [HttpGet("whoami")]
         [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
-public async Task<IActionResult> WhoAmI([FromHeader(Name = "Authorization")] string? authorization)
- {
+   [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+     public async Task<IActionResult> WhoAmI(
+            [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization)
+        {
             var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
    
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
@@ -173,16 +174,16 @@ public async Task<IActionResult> WhoAmI([FromHeader(Name = "Authorization")] str
     }
 
         /// <summary>
-   /// Update user profile (username, email) - Requires JWT
-        /// </summary>
-      [Authorize]
-        [HttpPut("profile")]
+/// Update user profile (username, email) - Requires JWT
+    /// </summary>
+        [Authorize]
+  [HttpPut("profile")]
         [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status412PreconditionFailed)]
-        [SwaggerOperation(Summary = "Update user profile", Description = "Requires ETag in If-Match header from GET /api/auth/whoami")]
-     public async Task<IActionResult> UpdateProfile(
-  [FromHeader(Name = "Authorization")] string? authorization,
+   [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+ [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status412PreconditionFailed)]
+  [SwaggerOperation(Summary = "Update user profile", Description = "Requires ETag in If-Match header from GET /api/auth/whoami")]
+        public async Task<IActionResult> UpdateProfile(
+            [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization,
     [FromBody] UpdateProfileRequest request,
        [FromHeader(Name = "If-Match")] string ifMatch)
   {
@@ -229,7 +230,7 @@ public async Task<IActionResult> WhoAmI([FromHeader(Name = "Authorization")] str
  [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
      [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
 public async Task<IActionResult> ChangePassword(
-  [FromHeader(Name = "Authorization")] string? authorization,
+  [FromHeader(Name = "Authorization")][System.ComponentModel.DataAnnotations.Required] string authorization,
  [FromBody] ChangePasswordRequest request)
     {
             var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
