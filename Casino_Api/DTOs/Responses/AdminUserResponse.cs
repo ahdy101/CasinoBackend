@@ -5,9 +5,9 @@ namespace Casino.Backend.DTOs.Responses
     /// </summary>
     public class AdminUserResponse
     {
-        public int Id { get; set; }
+  public int Id { get; set; }
    public string Username { get; set; } = string.Empty;
-   public string Email { get; set; } = string.Empty;
+     public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
     }

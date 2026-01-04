@@ -6,6 +6,7 @@ using Casino.Backend.Services;
 using Casino.Backend.Services.Interfaces;
 using Casino.Backend.Services.Implementations;
 using Casino.Backend.Middleware;
+using Casino.Backend.Filters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -93,8 +94,8 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
- // Clean schema IDs to avoid conflicts
-options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+    // Clean schema IDs to avoid conflicts
+    options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
     
     // Support nullable reference types
     options.SupportNonNullableReferenceTypes();
@@ -105,31 +106,8 @@ options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
     // Enable annotations support
     options.EnableAnnotations();
 
-    // Add Bearer token authorization using Swashbuckle's built-in support
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-    {
-        Description = "JWT Authorization header using the Bearer scheme. Enter your token in the text input below.\n\nExample: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-        Name = "Authorization",
-   In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-Scheme = "bearer",
-        BearerFormat = "JWT"
- });
-
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-    {
-        {
-         new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-   {
-    Reference = new Microsoft.OpenApi.Models.OpenApiReference
- {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-        Id = "Bearer"
-         }
-     },
-            Array.Empty<string>()
-   }
-    });
+    // Add Authorization header parameter to each endpoint
+    options.OperationFilter<AuthorizationHeaderOperationFilter>();
 });
 
 var app = builder.Build();

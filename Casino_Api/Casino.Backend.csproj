@@ -24,8 +24,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Filters\" />
+    <Folder Include="Casino_Api\Controllers\" />
+    <Folder Include="Casino_Api\DTOs\Requests\" />
+    <Folder Include="Casino_Api\DTOs\Responses\" />
+    <Folder Include="Casino_Api\Infrastructure\" />
+    <Folder Include="Casino_Api\Middleware\" />
+    <Folder Include="Casino_Api\Models\" />
+    <Folder Include="Casino_Api\Repositories\Implementations\" />
+    <Folder Include="Casino_Api\Repositories\Interfaces\" />
+    <Folder Include="Database\Migrations\" />
     <Folder Include="Swagger\" />
+    <Folder Include="wwwroot\" />
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="https://www.schemastore.org/asmdef.json" /></VisualStudio></ProjectExtensions>
